@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attention, Fully Explained — টোকেন থেকে আউটপুট | Bangla + English</title>
+<meta name="description" content="Interactive bilingual (Bangla + English) explainer of the attention mechanism: tokenization to output, with 16+ 2D/3D visualizations, history of RNN/LSTM, math deep-dive, and curated videos.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1628'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%233fe0ff' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%238f7bff'/%3E%3Cpath d='M16 3v6M16 23v6M3 16h6M23 16h6' stroke='%23ff6ec7' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="lang-bn">
+
+<header id="nav">
+  <div class="wrap bar">
+    <div class="logo">attention<b>.expl</b><span class="lg-txt"> — টোকেন → আউটপুট</span></div>
+    <nav class="navlinks">
+      <a class="nl" href="#history" data-en="History" data-bn="ইতিহাস">ইতিহাস</a>
+      <a class="nl" href="#tokenize" data-en="Tokenize" data-bn="টোকেন">টোকেন</a>
+      <a class="nl" href="#embed" data-en="Embed" data-bn="এমবেড">এমবেড</a>
+      <a class="nl" href="#position" data-en="Position" data-bn="পজিশন">পজিশন</a>
+      <a class="nl" href="#qkv" data-en="Q·K·V" data-bn="Q·K·V">Q·K·V</a>
+      <a class="nl" href="#scores" data-en="Scores" data-bn="স্কোর">স্কোর</a>
+      <a class="nl" href="#arcs" data-en="Arcs" data-bn="আর্ক">আর্ক</a>
+      <a class="nl" href="#heads" data-en="Heads" data-bn="হেড">হেড</a>
+      <a class="nl" href="#mask" data-en="Mask" data-bn="মাস্ক">মাস্ক</a>
+      <a class="nl" href="#pipeline" data-en="Pipeline" data-bn="পাইপলাইন">পাইপলাইন</a>
+      <a class="nl" href="#output" data-en="Output" data-bn="আউটপুট">আউটপুট</a>
+      <a class="nl" href="#math" data-en="Math" data-bn="গণিত">গণিত</a>
+      <a class="nl" href="#d3" data-en="3-D" data-bn="৩-ডি">৩-ডি</a>
+      <a class="nl" href="#videos" data-en="Videos" data-bn="ভিডিও">ভিডিও</a>
+      <a class="nl" href="#glossary" data-en="Glossary" data-bn="গ্লসারি">গ্লসারি</a>
+      <a class="nl" href="#credits" data-en="Credits" data-bn="ক্রেডিট">ক্রেডিট</a>
+    </nav>
+    <button class="langbtn" id="langBtn" title="Switch language">EN ⇄ বাং</button>
+  </div>
+  <div id="progress"></div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <canvas id="heroCanvas"></canvas>
+  <div class="wrap hero-in">
+    <div class="kick">interactive visual explorer · ইন্টারঅ্যাক্টিভ ভিজ্যুয়াল এক্সপ্লোরার</div>
+    <h1><span data-en="Attention," data-bn="অ্যাটেনশন,">অ্যাটেনশন,</span><br><span class="g" data-en="fully explained." data-bn="সম্পূর্ণ ব্যাখ্যাসহ।">সম্পূর্ণ ব্যাখ্যাসহ।</span></h1>
+    <div class="h2l" data-en="From tokenization to output — the mechanism behind every modern LLM."
+         data-bn="টোকেনাইজেশন থেকে আউটপুট পর্যন্ত — আধুনিক প্রতিটা LLM-এর পেছনের মেকানিজম।">
+      টোকেনাইজেশন থেকে আউটপুট পর্যন্ত — আধুনিক প্রতিটা LLM-এর পেছনের মেকানিজম।</div>
+    <p class="sub" data-en="RNN and LSTM tried to understand language one word at a time. Attention changed everything — and this page lets you FEEL it: drag it in 3-D, slide the math, watch 'it' find 'mouse'. Everything in Bangla and English, everything in your browser, nothing to install."
+       data-bn="RNN আর LSTM ভাষা বুঝতে চেয়েছিল এক শব্দ এক শব্দ করে। Attention সবকিছু বদলে দিল — আর এই পেজে তুমি সেটাকে অনুভব করবে: ৩-ডিতে ঘুরিয়ে দেখো, গণিতের স্লাইড নাড়াও, দেখো 'সে' শব্দটা নিজে থেকে 'ইঁদুর'-কে খুঁজে পায়। সবকিছু বাংলা ও ইংরেজিতে, সবকিছু ব্রাউজারে, কিছু ইনস্টল করতে হবে না।">
+      RNN আর LSTM ভাষা বুঝতে চেয়েছিল এক শব্দ এক শব্দ করে। Attention সবকিছু বদলে দিল — আর এই পেজে তুমি সেটাকে অনুভব করবে: ৩-ডিতে ঘুরিয়ে দেখো, গণিতের স্লাইড নাড়াও, দেখো 'সে' শব্দটা নিজে থেকে 'ইঁদুর'-কে খুঁজে পায়। সবকিছু বাংলা ও ইংরেজিতে, সবকিছু ব্রাউজারে, কিছু ইনস্টল করতে হবে না।</p>
+    <div class="stat-row">
+      <div class="stat"><b>16+</b><span data-en="visualizations" data-bn="ভিজ্যুয়ালাইজেশন">ভিজ্যুয়ালাইজেশন</span></div>
+      <div class="stat"><b>2</b><span data-en="languages" data-bn="ভাষা">ভাষা</span></div>
+      <div class="stat"><b>3D</b><span data-en="architecture &amp; attention" data-bn="আর্কিটেকচার ও অ্যাটেনশন">আর্কিটেকচার ও অ্যাটেনশন</span></div>
+      <div class="stat"><b>0</b><span data-en="setup needed" data-bn="সেটআপ লাগবে না">সেটআপ লাগবে না</span></div>
+    </div>
+    <div class="cta-row">
+      <a class="btn primary" href="#history" data-en="Start exploring ↓" data-bn="শেখা শুরু করো ↓">শেখা শুরু করো ↓</a>
+      <a class="btn" href="#videos" data-en="Watch the best videos" data-bn="সেরা ভিডিওগুলো দেখো">সেরা ভিডিওগুলো দেখো</a>
+    </div>
+  </div>
+  <div class="scroll-hint" data-en="SCROLL" data-bn="স্ক্রল">স্ক্রল</div>
+</section>
+
+<main class="wrap">
+
+<!-- ================= HISTORY ================= -->
+<section class="sec" id="history" data-kicker="chapter 0 · অধ্যায় ০">
+  <h2 data-en="A short history: from memory problems to attention" data-bn="ছোট্ট ইতিহাস: স্মৃতির সমস্যা থেকে attention পর্যন্ত">ছোট্ট ইতিহাস: স্মৃতির সমস্যা থেকে attention পর্যন্ত</h2>
+  <p class="lead" data-en="Attention did not fall from the sky. For thirty years people tried to make machines understand word order — each model solved one problem and exposed the next. This timeline explains why the 2017 Transformer was a revolution, not an accident."
+     data-bn="Attention হঠাৎ আকাশ থেকে নামেনি। ত্রিশ বছর ধরে মানুষ চেষ্টা করেছে মেশিনকে শব্দের ক্রম বোঝাতে — প্রতিটা মডেল একটা সমস্যা সমাধান করে পরেরটা দেখিয়েছে। এই টাইমলাইন দেখলে বোঝা যাবে, ২০১৭-র Transformer 'বিপ্লব' কেন ছিল, কাকতালীয় নয়।">
+    Attention হঠাৎ আকাশ থেকে নামেনি। ত্রিশ বছর ধরে মানুষ চেষ্টা করেছে মেশিনকে শব্দের ক্রম বোঝাতে — প্রতিটা মডেল একটা সমস্যা সমাধান করে পরেরটা দেখিয়েছে। এই টাইমলাইন দেখলে বোঝা যাবে, ২০১৭-র Transformer 'বিপ্লব' কেন ছিল, কাকতালীয় নয়।</p>
+  <div class="tl" id="timeline"></div>
+  <details class="deep">
+    <summary data-en="Deep dive: why recurrence was doomed (in one paragraph)" data-bn="গভীরে: recurrence কেন রাস্তার শেষ ছিল (এক প্যারায়)">গভীরে: recurrence কেন রাস্তার শেষ ছিল (এক প্যারায়)</summary>
+    <div class="inner" data-en="In an RNN, information from token 1 reaches token 100 only by passing through 99 intermediate states. At each hop some information is squashed, and gradients during training do the same — multiply a number by 0.9 ninety-nine times and see what remains. LSTMs patched this with gates, but the sequential chain remained: GPU parallelism was unusable across time, so models could not scale. Attention removes the chain completely — every token connects to every other token in ONE parallel step. That is what made GPT-3 possible."
+         data-bn="RNN-এ টোকেন ১-এর তথ্য টোকেন ১০০-এ পৌঁছায় মাঝের ৯৯টা স্টেটের ভেতর দিয়ে। প্রতি ধাপে কিছু তথ্য চাপা পড়ে, ট্রেনিংয়ের সময় গ্র্যাডিয়েন্টও তাই — একটা সংখ্যাকে ৯৯ বার ০.৯ দিয়ে গুণ করলে কী থাকে হিসাব করে দেখো। LSTM গেট দিয়ে এটা ঠিক করল, কিন্তু ধারাবাহিক শিকলটা রয়ে গেল: GPU-র সমান্তরাল ক্ষমতা সময়ের (time) দিকে ব্যবহারই করা যেত না, তাই মডেল বড় হতে পারত না। Attention শিকলটাই সরিয়ে দেয় — প্রতিটা টোকেন প্রতিটা টোকেনের সাথে যুক্ত হয় এক সমান্তরাল ধাপে। GPT-3 সম্ভব হয়েছে ঠিক এই কারণে।">
+      In an RNN, information from token 1 reaches token 100 only by passing through 99 intermediate states. At each hop some information is squashed, and gradients during training do the same — multiply a number by 0.9 ninety-nine times and see what remains. LSTMs patched this with gates, but the sequential chain remained: GPU parallelism was unusable across time, so models could not scale. Attention removes the chain completely — every token connects to every other token in ONE parallel step. That is what made GPT-3 possible.</div>
+  </details>
+</section>
+
+<!-- ================= TOKENIZE ================= -->
+<section class="sec" id="tokenize" data-kicker="step 1 · ধাপ ১">
+  <h2 data-en="Tokenization — machines read numbers, not words" data-bn="টোকেনাইজেশন — মেশিন শব্দ পড়ে না, সংখ্যা পড়ে">টোকেনাইজেশন — মেশিন শব্দ পড়ে না, সংখ্যা পড়ে</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="A language model cannot read letters. Step one: cut the text into small pieces called <b class='hl-cy'>tokens</b>, and give each piece an integer <b class='hl-cy'>ID</b>. Real GPT tokenizers learn their cuts from trillions of characters — that is why 'unbelievable' becomes un + ##believ + ##able, and rare Bangla words often split more aggressively."
+         data-bn="ল্যাঙ্গুয়েজ মডেল অক্ষর পড়তে পারে না। প্রথম ধাপ: টেক্সটকে ছোট ছোট টুকরোয় ভাগ করা — এদের বলে <b class='hl-cy'>টোকেন</b>, আর প্রতিটাকে দেওয়া হয় একটা পূর্ণসংখ্যা <b class='hl-cy'>ID</b>। আসল GPT-এর টোকেনাইজার লাখ লাখ কোটি অক্ষর থেকে কাটাকাটি নিজেই শিখে নেয় — তাই 'unbelievable' হয়ে যায় un + ##believ + ##able, আর বিরল বাংলা শব্দ প্রায়ই আরও জোরে কাটা পড়ে।">
+      A language model cannot read letters. Step one: cut the text into small pieces called <b class="hl-cy">tokens</b>, and give each piece an integer <b class="hl-cy">ID</b>. Real GPT tokenizers learn their cuts from trillions of characters — that is why 'unbelievable' becomes un + ##believ + ##able, and rare Bangla words often split more aggressively.</span>
+  </div>
+  <div class="card">
+    <div class="controls">
+      <input type="text" id="tokInput" value="Attention is unbelievable! আমি মেশিন লার্নিং শিখছি" spellcheck="false">
+      <button class="btn primary" id="tokBtn" data-en="Tokenize" data-bn="টোকেনাইজ করো">টোকেনাইজ করো</button>
+    </div>
+    <div class="controls" id="tokPresets"></div>
+    <div class="chips" id="tokChips"></div>
+    <p class="note" id="tokMeta"></p>
+    <p class="note" data-en="Gold chips are subword pieces; BERT-style &quot;##&quot; means &quot;continuation of the previous piece&quot;. IDs here are toy hashes — real vocabularies (e.g. 50,257 entries in GPT-2) map IDs to pieces fixed at training time."
+       data-bn="সোনালি চিপগুলো সাবওয়ার্ড টুকরো; BERT-স্টাইলের &quot;##&quot; মানে &quot;আগের টুকরোর ধারাবাহিকতা&quot;। এখানে ID-গুলো টয় হ্যাশ — আসল ভোকাবুলারিতে (যেমন GPT-2-এ ৫০,২৫৭টা) প্রতিটা ID-র জন্য টুকরো ট্রেনিংয়ের আগেই ঠিক করা থাকে।">
+      Gold chips are subword pieces; BERT-style "##" means "continuation of the previous piece". IDs here are toy hashes — real vocabularies (e.g. 50,257 entries in GPT-2) map IDs to pieces fixed at training time.</p>
+    <details class="deep">
+      <summary data-en="Deep dive: why subwords? (BPE in plain words)" data-bn="গভীরে: সাবওয়ার্ড কেন? (সহজ ভাষায় BPE)">গভীরে: সাবওয়ার্ড কেন? (সহজ ভাষায় BPE)</summary>
+      <div class="inner" data-en="Three options: characters (too tiny — wasteful context), words (too many — 'run', 'running', 'ran' would each need separate slots and new words would never fit), or subwords (just right). Byte Pair Encoding starts from characters and repeatedly merges the most frequent adjacent pair — 'e'+'r' → 'er', 'th'+'e' → 'the' — until the vocabulary reaches the target size (GPT-2: 50,257). Common words stay whole; rare words decompose into meaningful pieces. Bangla works the same way in multilingual tokenizers, though with less training data the cuts are usually finer. Try tiktokenizer.vercel.app to see real cuts live."
+           data-bn="তিনটা পথ: অক্ষর (অনেক ছোট — কনটেক্সট নষ্ট), পুরো শব্দ (অনেক বেশি — 'চলা', 'চলছে', 'চলল' প্রতিটার আলাদা জায়গা লাগবে, নতুন শব্দ আর ঢুকবেই না), অথবা সাবওয়ার্ড (একদম ঠিক)। Byte Pair Encoding অক্ষর থেকে শুরু করে বারবার সবচেয়ে ঘন ঘন পাশাপাশি জোড়া মেলাতে থাকে — 'e'+'r' → 'er', 'th'+'e' → 'the' — ভোকাবুলারি টার্গেট সাইজে পৌঁছানো পর্যন্ত (GPT-2: ৫০,২৫৭)। কমন শব্দ অক্ষত থাকে, বিরল শব্দ অর্থবহ টুকরোয় ভাঙে। মাল্টিলিঙ্গুয়াল টোকেনাইজারে বাংলাও একইভাবে চলে, তবে ট্রেনিং ডেটা কম থাকায় কাটাগুলো সাধারণত আরও সূক্ষ্ম হয়। লাইভ দেখতে tiktokenizer.vercel.app খুলো।">
+        Three options: characters (too tiny — wasteful context), words (too many — 'run', 'running', 'ran' would each need separate slots and new words would never fit), or subwords (just right). Byte Pair Encoding starts from characters and repeatedly merges the most frequent adjacent pair — 'e'+'r' → 'er', 'th'+'e' → 'the' — until the vocabulary reaches the target size (GPT-2: 50,257). Common words stay whole; rare words decompose into meaningful pieces. Bangla works the same way in multilingual tokenizers, though with less training data the cuts are usually finer. Try tiktokenizer.vercel.app to see real cuts live.</div>
+    </details>
+  </div>
+</section>
+
+<!-- ================= EMBED ================= -->
+<section class="sec" id="embed" data-kicker="step 2 · ধাপ ২">
+  <h2 data-en="Embeddings — meaning as geometry" data-bn="এমবেডিং — জ্যামিতি হয়ে ওঠা অর্থ">এমবেডিং — জ্যামিতি হয়ে ওঠা অর্থ</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="Each token ID borrows a <b class='hl-cy'>vector</b> — a list of numbers — from a huge virtual dictionary. In real GPT each vector has ~12,288 numbers. The beautiful part: directions in this space carry meaning, so words with similar meaning sit close together. Below, a toy 2-D map: hover the dots, then press the magic button."
+         data-bn="প্রতিটা টোকেন-ID একটা বিশাল ভার্চুয়াল ডিকশনারি থেকে একটা <b class='hl-cy'>ভেক্টর</b> — সংখ্যার তালিকা — ধার করে। আসল GPT-এ প্রতিটা ভেক্টরে ~১২,২৮৮টা সংখ্যা থাকে। সবচেয়ে সুন্দর ব্যাপারটা: এই স্পেসের দিক-ইন্দিরা অর্থ বহন করে, তাই অর্থের কাছাকাছি শব্দ বসে কাছাকাছি। নিচে একটা টয় ২-D ম্যাপ: ডটে হোভার করো, তারপর ম্যাজিক বাটন চাপো।">
+      Each token ID borrows a <b class="hl-cy">vector</b> — a list of numbers — from a huge virtual dictionary. In real GPT each vector has ~12,288 numbers. The beautiful part: directions in this space carry meaning, so words with similar meaning sit close together. Below, a toy 2-D map: hover the dots, then press the magic button.</span>
+  </div>
+  <div class="grid2">
+    <div class="viz-frame">
+      <div class="controls"><div class="chips" id="embWords" style="margin:0"></div></div>
+      <canvas class="viz" id="embHeat" height="210"></canvas>
+      <div class="cap" id="embVecCap"></div>
+    </div>
+    <div class="viz-frame">
+      <canvas class="viz" id="embScatter" height="330" style="cursor:pointer"></canvas>
+      <div class="cap" data-en="Toy 2-D semantic map — clusters = meaning (animals, royalty, fruit, action, colour)"
+           data-bn="টয় ২-D সেমান্টিক ম্যাপ — ক্লাস্টার = অর্থ (প্রাণী, রাজপরিবার, ফল, কাজ, রং)">টয় ২-D সেমান্টিক ম্যাপ — ক্লাস্টার = অর্থ (প্রাণী, রাজপরিবার, ফল, কাজ, রং)</div>
+    </div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="embMagicBtn">king − man + woman = ?</button>
+    <span class="note" id="embMagicNote"></span>
+  </div>
+  <details class="deep">
+    <summary data-en="Deep dive: how do we compare two vectors?" data-bn="গভীরে: দুই ভেক্টর তুলনা করা হয় কীভাবে?">গভীরে: দুই ভেক্টর তুলনা করা হয় কীভাবে?</summary>
+    <div class="inner" data-en="The dot product: multiply the two vectors element by element and add everything up. Big result = vectors point the same way = similar meaning. It is literally the first half of every attention score you will see below. Cosine similarity is the same idea with vector lengths removed."
+         data-bn="ডট প্রোডাক্ট: দুই ভেক্টরকে এলিমেন্ট ধরে গুণ করে সব যোগ করা। বড় মান = ভেক্টর দুটো একই দিকে = অর্থ মিল। নিচে যে attention স্কোরগুলো দেখবে, তার প্রতিটার প্রথম অর্ধেকই আসলে এটা। Cosine similarity একই আইডিয়া, শুধু ভেক্টরের দৈর্ঘ্য বাদ দেওয়া।">
+      The dot product: multiply the two vectors element by element and add everything up. Big result = vectors point the same way = similar meaning. It is literally the first half of every attention score you will see below. Cosine similarity is the same idea with vector lengths removed.</div>
+  </details>
+</section>
+<!-- ================= POSITION ================= -->
+<section class="sec" id="position" data-kicker="step 3 · ধাপ ৩">
+  <h2 data-en="Positional encoding — attention forgets order, so we whisper it" data-bn="পজিশনাল এনকোডিং — attention ক্রম ভুলে যায়, তাই আমরা ফিসফিস করে বলি">পজিশনাল এনকোডিং — attention ক্রম ভুলে যায়, তাই আমরা ফিসফিস করে বলি</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="Self-attention treats its input as a <b class='hl-cy'>bag of tokens</b> — 'dog bites man' and 'man bites dog' would look identical! Fix: add a unique <b class='hl-vi'>positional fingerprint</b> to every position. The 2017 recipe mixes sine and cosine waves of different frequencies — like clocks: one ticks fast, one slow, and together each position gets a signature."
+         data-bn="Self-attention ইনপুটকে দেখে <b class='hl-cy'>টোকেনের ঝুড়ি</b> হিসেবে — 'ডগ বিটস ম্যান' আর 'ম্যান বিটস ডগ' একই মনে হতো! সমাধান: প্রতিটা পজিশনে একটা ইউনিক <b class='hl-vi'>পজিশনাল ফিঙ্গারপ্রিন্ট</b> যোগ করা। ২০১৭-র রেসিপি বিভিন্ন কম্পাঙ্কের sine আর cosine ওয়েভ মিশিয়ে বানায় — ঘড়ির মতো: একটা দ্রুত চলে, একটা ধীরে, আর একসাথে প্রতিটা পজিশন পায় তার নিজস্ব সিগনেচার।">
+      Self-attention treats its input as a <b class="hl-cy">bag of tokens</b> — 'dog bites man' and 'man bites dog' would look identical! Fix: add a unique <b class="hl-vi">positional fingerprint</b> to every position. The 2017 recipe mixes sine and cosine waves of different frequencies — like clocks: one ticks fast, one slow, and together each position gets a signature.</span>
+  </div>
+  $$PE_{(pos,\,2i)}=\sin\!\left(\frac{pos}{10000^{2i/d}}\right)\qquad PE_{(pos,\,2i+1)}=\cos\!\left(\frac{pos}{10000^{2i/d}}\right)$$
+  <div class="grid2">
+    <div class="viz-frame">
+      <canvas class="viz" id="peHeat" height="330"></canvas>
+      <div class="cap" data-en="Each row = one dimension, each column = one position (0…47). The highlighted row = current slider position."
+           data-bn="প্রতি সারি = এক ডাইমেনশন, প্রতি কলাম = এক পজিশন (০…৪৭)। হাইলাইট করা কলাম = স্লাইডারের বর্তমান পজিশন।">প্রতি সারি = এক ডাইমেনশন, প্রতি কলাম = এক পজিশন (০…৪৭)। হাইলাইট করা কলাম = স্লাইডারের বর্তমান পজিশন।</div>
+    </div>
+    <div class="viz-frame">
+      <canvas class="viz" id="peCurves" height="330"></canvas>
+      <div class="cap" data-en="The raw sine/cosine waves for dimensions 0–5 — fast clocks on the left, slow clocks on the right."
+           data-bn="ডাইমেনশন ০–৫-এর কাঁচা sine/cosine তরঙ্গ — বাঁ দিকে দ্রুত ঘড়ি, ডান দিকে ধীর ঘড়ি।">ডাইমেনশন ০–৫-এর কাঁচা sine/cosine তরঙ্গ — বাঁ দিকে দ্রুত ঘড়ি, ডান দিকে ধীর ঘড়ি।</div>
+    </div>
+  </div>
+  <div class="controls">
+    <label class="rng"><span data-en="position" data-bn="পজিশন">পজিশন</span> <b class="mono" id="pePosVal">0</b>
+      <input type="range" id="pePos" min="0" max="47" value="0" step="1" style="width:220px"></label>
+    <span class="note" id="peRead"></span>
+  </div>
+  <details class="deep">
+    <summary data-en="Deep dive: why waves instead of 1,2,3…?" data-bn="গভীরে: ১,২,৩… না দিয়ে তরঙ্গ কেন?">গভীরে: ১,২,৩… না দিয়ে তরঙ্গ কেন?</summary>
+    <div class="inner" data-en="Raw integers blow up (position 5000 ≫ any embedding value) and tell the model nothing about relative distance. Waves stay bounded in [−1, 1], and any shift by k positions is a fixed rotation of the wave pair — so '5 steps away' looks similar everywhere in the sentence. Modern models often learn positions or rotate queries/keys (RoPE in LLaMA) — same goal, newer math."
+         data-bn="কাঁচা পূর্ণসংখ্যা বিশাল হয়ে যায় (পজিশন ৫০০০ যেকোনো এমবেডিং মানের চেয়ে অনেক বড়) আর আপেক্ষিক দূরত্বের কোনো ইঙ্গিতও দেয় না। তরঙ্গ [−১, ১]-এর মধ্যে সীমাবদ্ধ, আর k ঘর সরলে তরঙ্গজোড়ার ঘূর্ণনও ঠিক k-এর ফাংশন — তাই '৫ ঘর দূরে' বাক্যের যেকোনো জায়গায় একই রকম দেখায়। আধুনিক মডেল প্রায়ই পজিশন শিখে নয় (LLaMA-র RoPE) কুয়েরি/কী ঘোরায় — একই লক্ষ্য, নতুন গণিত।">
+      Raw integers blow up (position 5000 ≫ any embedding value) and tell the model nothing about relative distance. Waves stay bounded in [−1, 1], and any shift by k positions is a fixed rotation of the wave pair — so '5 steps away' looks similar everywhere in the sentence. Modern models often learn positions or rotate queries/keys (RoPE in LLaMA) — same goal, newer math.</div>
+  </details>
+</section>
+
+<!-- ================= QKV ================= -->
+<section class="sec" id="qkv" data-kicker="the heart · প্রাণভোমরা">
+  <h2 data-en="Query, Key, Value — three costumes for every token" data-bn="কুয়েরি, কী, ভ্যালু — প্রতিটা টোকেনের তিনটা ছদ্মবেশ">কুয়েরি, কী, ভ্যালু — প্রতিটা টোকেনের তিনটা ছদ্মবেশ</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="Think of a <b class='hl-cy'>library</b>. Your <b class='hl-go'>Query</b> is what you type in the search box. Each book's <b class='hl-gr'>Key</b> is its spine label. The <b class='hl-pk'>Value</b> is the actual text inside. Search = compare your query with every key; the best matches hand you their values. That is ALL attention does — three learned projections of the same token, then a weighted mix."
+         data-bn="একটা <b class='hl-cy'>লাইব্রেরি</b>-র কথা ভাবো। তোমার <b class='hl-go'>কুয়েরি</b> হলো সার্চ বক্সে টাইপ করা প্রশ্ন। প্রতিটা বইয়ের <b class='hl-gr'>কী</b> হলো তার গায়ের লেবেল। আর <b class='hl-pk'>ভ্যালু</b> হলো ভেতরের আসল লেখা। সার্চ = তোমার কুয়েরির সাথে সব কী মেলানো; সবচেয়ে ভালো ম্যাচগুলো তাদের ভ্যালু তুলে দেয়। Attention আসলে ব্যস, এটুকুই — একই টোকেনের তিনটা শেখা প্রজেকশন, তারপর একটা ওজনসহ মিশ্রণ।">
+      Think of a <b class="hl-cy">library</b>. Your <b class="hl-go">Query</b> is what you type in the search box. Each book's <b class="hl-gr">Key</b> is its spine label. The <b class="hl-pk">Value</b> is the actual text inside. Search = compare your query with every key; the best matches hand you their values. That is ALL attention does — three learned projections of the same token, then a weighted mix.</span>
+  </div>
+  <div class="qkv">
+    <div class="qc q"><div class="big">Q</div><h3 data-en="Query — &quot;what am I looking for?&quot;" data-bn="কুয়েরি — &quot;আমি কী খুঁজছি?&quot;">কুয়েরি — "আমি কী খুঁজছি?"</h3>
+      <p class="role" data-en="Q = X·W_Q. The pronoun 'it' grows a query like: &quot;recent singular noun, ideally an animal or thing&quot;." data-bn="Q = X·W_Q। 'it'/'সে' সর্বনামটার কুয়েরি হয়ে ওঠে কিছু এমন: &quot;কাছের একবচন বিশেষ্য, মিলবে প্রাণী বা বস্তু হলে&quot;।">Q = X·W_Q। 'it'/'সে' সর্বনামটার কুয়েরি হয়ে ওঠে কিছু এমন: "কাছের একবচন বিশেষ্য, মিলবে প্রাণী বা বস্তু হলে"।</p></div>
+    <div class="qc k"><div class="big">K</div><h3 data-en="Key — &quot;what do I contain?&quot;" data-bn="কী — &quot;আমার মধ্যে কী আছে?&quot;">কী — "আমার মধ্যে কী আছে?"</h3>
+      <p class="role" data-en="K = X·W_K. The word 'mouse' grows a key like: &quot;singular animal noun, recently mentioned&quot; — advertising what it can answer for." data-bn="K = X·W_K। 'mouse'/'ইঁদুর' শব্দের কী হয়ে ওঠে এমন: &quot;একবচন প্রাণী-বিশেষ্য, সবেমাত্র উল্লেখ হয়েছে&quot; — সে কীসের উত্তর দিতে পারে তার বিজ্ঞাপন।">K = X·W_K। 'mouse'/'ইঁদুর' শব্দের কী হয়ে ওঠে এমন: "একবচন প্রাণী-বিশেষ্য, সবেমাত্র উল্লেখ হয়েছে" — সে কীসের উত্তর দিতে পারে তার বিজ্ঞাপন।</p></div>
+    <div class="qc v"><div class="big">V</div><h3 data-en="Value — &quot;what will I give if matched?&quot;" data-bn="ভ্যালু — &quot;ম্যাচ পেলে কী দেব?&quot;">ভ্যালু — "ম্যাচ পেলে কী দেব?"</h3>
+      <p class="role" data-en="V = X·W_V. If 'it' attends to 'mouse', the mouse's VALUE (its meaning-payload) flows into the 'it' vector. Information moves through V, never through scores." data-bn="V = X·W_V। 'it'/'সে' যদি 'mouse'/'ইঁদুর'-এর দিকে তাকায়, ইঁদুরের ভ্যালু (তার অর্থের পে-লোড) 'it'-এর ভেক্টরে ঢুকে যায়। তথ্য চলাচল করে V দিয়ে, কখনো স্কোর দিয়ে নয়।">V = X·W_V। 'it'/'সে' যদি 'mouse'/'ইঁদুর'-এর দিকে তাকায়, ইঁদুরের ভ্যালু (তার অর্থের পে-লোড) 'it'-এর ভেক্টরে ঢুকে যায়। তথ্য চলাচল করে V দিয়ে, কখনো স্কোর দিয়ে নয়।</p></div>
+  </div>
+  <details class="deep">
+    <summary data-en="Deep dive: where do W_Q, W_K, W_V come from?" data-bn="গভীরে: W_Q, W_K, W_V আসে কোথা থেকে?">গভীরে: W_Q, W_K, W_V আসে কোথা থেকে?</summary>
+    <div class="inner" data-en="They start as random matrices and are updated by gradient descent during training — nobody programs them. One attention block of GPT-3 size has 96 heads × 3 matrices per head. After training, heads self-organize into specialists (syntax, coreference, position…), exactly like the toy heads below."
+         data-bn="ওরা শুরু করে এলোমেলো ম্যাট্রিক্স হিসেবে, আর ট্রেনিংয়ে গ্র্যাডিয়েন্ট ডিসেন্টে বদলে যায় — কেউ এগুলো প্রোগ্রাম করে না। GPT-3 সাইজের এক ব্লকে ৯৬টা হেড × প্রতি হেডে ৩টা ম্যাট্রিক্স। ট্রেনিং শেষে হেডরা নিজেরাই বিশেষজ্ঞে ভাগ হয়ে যায় (বাক্য-গঠন, নির্দেশ-সম্পর্ক, অবস্থান…) — ঠিক নিচের টয় হেডগুলোর মতো।">
+      They start as random matrices and are updated by gradient descent during training — nobody programs them. One attention block of GPT-3 size has 96 heads × 3 matrices per head. After training, heads self-organize into specialists (syntax, coreference, position…), exactly like the toy heads below.</div>
+  </details>
+</section>
+
+<!-- ================= SCORES + SOFTMAX ================= -->
+<section class="sec" id="scores" data-kicker="compute · হিসাব">
+  <h2 data-en="Scores → softmax → weights — the famous formula, live" data-bn="স্কোর → সফটম্যাক্স → ওজন — সেই বিখ্যাত সূত্র, জীবন্ত">স্কোর → সফটম্যাক্স → ওজন — সেই বিখ্যাত সূত্র, জীবন্ত</h2>
+  $$\text{Attention}(Q,K,V)=\text{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$
+  <div class="story">
+    <span class="tag">play · খেলা</span>
+    <span data-en="Below: the <b class='hl-cy'>score matrix</b> for a real sentence. Row = the token doing the looking (query), column = the token being looked at (key). Click any row, then drag <b class='hl-go'>temperature</b> and watch softmax sharpen or melt. When temperature is low, each token confidently picks one partner; when high, it listens to everyone a little."
+         data-bn="নিচে একটা আসল বাক্যের <b class='hl-cy'>স্কোর ম্যাট্রিক্স</b>। সারি = যে টোকেন তাকাচ্ছে (কুয়েরি), কলাম = যার দিকে তাকানো হচ্ছে (কী)। যেকোনো সারিতে ক্লিক করো, তারপর <b class='hl-go'>টেম্পারেচার</b> টানো — সফটম্যাক্স ধারালো হচ্ছে না নরম দেখো। টেম্পারেচার কম হলে প্রতিটা টোকেন আত্মবিশ্বাসে একজনকে বেছে নেয়; বেশি হলে সবাইকে একটু একটু শোনে।">
+      Below: the <b class="hl-cy">score matrix</b> for a real sentence. Row = the token doing the looking (query), column = the token being looked at (key). Click any row, then drag <b class="hl-go">temperature</b> and watch softmax sharpen or melt. When temperature is low, each token confidently picks one partner; when high, it listens to everyone a little.</span>
+  </div>
+  <div class="controls">
+    <select id="attPreset"></select>
+    <label class="rng"><span data-en="temperature" data-bn="টেম্পারেচার">টেম্পারেচার</span>
+      <input type="range" id="attTemp" min="0.15" max="3" step="0.05" value="1" style="width:190px">
+      <b class="val" id="attTempVal">1.00</b></label>
+    <span class="note" id="attNote"></span>
+  </div>
+  <div class="grid2">
+    <div class="viz-frame">
+      <canvas class="viz" id="scoreMatrix" style="cursor:pointer"></canvas>
+      <div class="cap" id="scoreCap"></div>
+    </div>
+    <div class="viz-frame">
+      <canvas class="viz" id="softmaxBars" height="330"></canvas>
+      <div class="cap" id="softmaxCap"></div>
+      <div class="colorbar"></div>
+      <div class="colorbar-row"><span>0.0</span><span class="mono" id="dKNote">√d_k = √8 ≈ 2.83</span><span>1.0</span></div>
+    </div>
+  </div>
+  <p class="note" id="attSelInfo" style="margin-top:10px"></p>
+  <details class="deep">
+    <summary data-en="Deep dive: why divide by √dk?" data-bn="গভীরে: √dk দিয়ে ভাগ করা হয় কেন?">গভীরে: √dk দিয়ে ভাগ করা হয় কেন?</summary>
+    <div class="inner" data-en="If query and key components are independent with mean 0 and variance 1, their dot product over dk dimensions has variance dk. For dk=64 the raw scores spread over roughly ±8 — softmax saturates, gradients die. Dividing by √dk (not dk — that would over-flatten) restores a healthy spread for ANY head size. A one-line fix that makes deep stacks trainable."
+         data-bn="কুয়েরি আর কী-এর উপাদানগুলো স্বাধীন, গড় ০ আর ভ্যারিয়েন্স ১ হলে dk মাত্রার ডট প্রোডাক্টের ভ্যারিয়েন্স হয় dk। dk=64-এ কাঁচা স্কোর ছড়িয়ে পড়ে প্রায় ±৮ পর্যন্ত — softmax স্যাচুরেট করে, গ্র্যাডিয়েন্ট মরে যায়। √dk দিয়ে ভাগ করলে (dk নয় — তাহলে বেশি সমতল হয়ে যেত) যেকোনো হেড সাইজে স্বাস্থ্যকর বিস্তার ফিরে আসে। এক লাইনের সমাধান, গভীর স্ট্যাককে ট্রেনযোগ্য রাখে।">
+      If query and key components are independent with mean 0 and variance 1, their dot product over dk dimensions has variance dk. For dk=64 the raw scores spread over roughly ±8 — softmax saturates, gradients die. Dividing by √dk (not dk — that would over-flatten) restores a healthy spread for ANY head size. A one-line fix that makes deep stacks trainable.</div>
+  </details>
+</section>
+
+<!-- ================= ARCS ================= -->
+<section class="sec" id="arcs" data-kicker="see it move · চোখে দেখো">
+  <h2 data-en="The arc diagram — watch 'it' find 'mouse'" data-bn="আর্ক ডায়াগ্রাম — দেখো 'সে' কীভাবে 'ইঁদুর' খুঁজে পায়">আর্ক ডায়াগ্রাম — দেখো 'সে' কীভাবে 'ইঁদুর' খুঁজে পায়</h2>
+  <div class="story">
+    <span class="tag">play · খেলা</span>
+    <span data-en="This is the picture made famous by <b class='hl-cy'>BertViz</b>. Arc thickness = attention weight. Click any token to see who it listens to — and who listens to it. Try clicking <b class='hl-go' id='arcHint'>'it' / 'সে'</b> first."
+         data-bn="এই ছবিটাই বিখ্যাত করেছিল <b class='hl-cy'>BertViz</b>। আর্কের মোটা = attention ওজন। যেকোনো টোকেনে ক্লিক করো — সে কাকে শোনে আর কে তাকে শোনে। প্রথমে <b class='hl-go' id='arcHint'>'it' / 'সে'</b>-তে ক্লিক করে দেখো।">
+      This is the picture made famous by <b class="hl-cy">BertViz</b>. Arc thickness = attention weight. Click any token to see who it listens to — and who listens to it. Try clicking <b class="hl-go" id="arcHint">'it' / 'সে'</b> first.</span>
+  </div>
+  <div class="controls">
+    <select id="arcPreset"></select>
+    <select id="arcHead"></select>
+    <span class="note" id="arcNote"></span>
+  </div>
+  <div class="viz-frame">
+    <div id="arcSvg"></div>
+    <p class="note" id="arcInfo" style="text-align:center;margin-top:6px"></p>
+  </div>
+</section>
+
+<!-- ================= HEADS ================= -->
+<section class="sec" id="heads" data-kicker="teamwork · দলবদ্ধ কাজ">
+  <h2 data-en="Multi-head attention — a committee of specialists" data-bn="মাল্টি-হেড অ্যাটেনশন — বিশেষজ্ঞদের কমিটি">মাল্টি-হেড অ্যাটেনশন — বিশেষজ্ঞদের কমিটি</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="One head can only learn ONE kind of relationship. So the transformer runs <b class='hl-cy'>many heads in parallel</b> — GPT-3 uses 96 — each with its own W_Q, W_K, W_V. Their outputs are concatenated and mixed by W_O. Click each mini-matrix below to inspect a specialist."
+         data-bn="একটা হেড শিখতে পারে মাত্র একরকম সম্পর্ক। তাই transformer চালায় <b class='hl-cy'>অনেকগুলো হেড সমান্তরালে</b> — GPT-3 ব্যবহার করে ৯৬টা — প্রতিটার নিজস্ব W_Q, W_K, W_V থাকে। সবার আউটপুট জোড়া লেগে W_O দিয়ে মিশে। নিচের মিনি-ম্যাট্রিক্সগুলোতে ক্লিক করে প্রতিটা বিশেষজ্ঞকে দেখো।">
+      One head can only learn ONE kind of relationship. So the transformer runs <b class="hl-cy">many heads in parallel</b> — GPT-3 uses 96 — each with its own W_Q, W_K, W_V. Their outputs are concatenated and mixed by W_O. Click each mini-matrix below to inspect a specialist.</span>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="grid2" id="headsGrid"></div>
+      <p class="note" id="headsNote" style="margin-top:10px"></p>
+    </div>
+    <div class="viz-frame">
+      <canvas class="viz" id="headMatrix"></canvas>
+      <div class="cap" id="headCap"></div>
+    </div>
+  </div>
+  <details class="deep">
+    <summary data-en="Deep dive: 8 heads → concat → W_O (the shapes)" data-bn="গভীরে: ৮ হেড → concat → W_O (শেপগুলো)">গভীরে: ৮ হেড → concat → W_O (শেপগুলো)</summary>
+    <div class="inner" data-en="With d_model=512 and 8 heads, each head works in dk = 512/8 = 64 dimensions. Head h computes softmax(Q_h K_hᵀ/√64)V_h ∈ ℝ^(n×64). Concatenating 8 heads gives ℝ^(n×512), multiplied by W_O ∈ ℝ^(512×512) to blend the specialists back into one representation. Same total cost as one big attention — but far more expressive."
+         data-bn="d_model=512 আর ৮ হেড হলে প্রতিটা হেড কাজ করে dk = 512/8 = ৬৪ ডাইমেনশনে। হেড h হিসাব করে softmax(Q_h K_hᵀ/√64)V_h ∈ ℝ^(n×64)। ৮টা হেড জোড়া লাগলে ℝ^(n×512), তারপর W_O ∈ ℝ^(512×512) গুণ করে বিশেষজ্ঞদের আবার এক প্রতিনিধিত্বে মেশানো হয়। খরচ এক বড় attention-এর সমানই — কিন্তু অভিব্যক্তি অনেক বেশি।">
+      With d_model=512 and 8 heads, each head works in dk = 512/8 = 64 dimensions. Head h computes softmax(Q_h K_hᵀ/√64)V_h ∈ ℝ^(n×64). Concatenating 8 heads gives ℝ^(n×512), multiplied by W_O ∈ ℝ^(512×512) to blend the specialists back into one representation. Same total cost as one big attention — but far more expressive.</div>
+  </details>
+</section>
+<!-- ================= MASK ================= -->
+<section class="sec" id="mask" data-kicker="fair play · সৎ খেলা">
+  <h2 data-en="Causal masking — no peeking at the future" data-bn="কজ্যুয়াল মাস্কিং — ভবিষ্যতে চোখ দেওয়া নিষেধ">কজ্যুয়াল মাস্কিং — ভবিষ্যতে চোখ দেওয়া নিষেধ</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="GPT writes left-to-right, one token at a time. If, while training on position 5, it could see token 6, that would be like <b class='hl-cy'>cheating in an exam by reading tomorrow's answer sheet</b> — the model would look brilliant during training and useless in real life. The causal mask sets every future score to −∞, so softmax gives the future exactly 0 weight."
+         data-bn="GPT লেখে বাঁ থেকে ডানে, এক এক করে টোকেন। ট্রেনিংয়ে পজিশন ৫-এ বসে যদি টোকেন ৬ দেখতে পারত, সেটা হতো <b class='hl-cy'>কালকের উত্তরপত্র এগিয়ে নিয়ে পরীক্ষা দেওয়ার</b> মতো — মডেল ট্রেনিংয়ে প্রতিভাবান দেখাবে, আসল জীবনে অকেজো। কজ্যুয়াল মাস্ক ভবিষ্যতের প্রতিটা স্কোর −∞ করে দেয়, তাই softmax ভবিষ্যতের ওজন হুবহু ০ করে দেয়।">
+      GPT writes left-to-right, one token at a time. If, while training on position 5, it could see token 6, that would be like <b class="hl-cy">cheating in an exam by reading tomorrow's answer sheet</b> — the model would look brilliant during training and useless in real life. The causal mask sets every future score to −∞, so softmax gives the future exactly 0 weight.</span>
+  </div>
+  <div class="controls">
+    <button class="btn primary" id="maskBtn" data-en="Apply causal mask" data-bn="কজ্যুয়াল মাস্ক চালু করো">কজ্যুয়াল মাস্ক চালু করো</button>
+    <span class="note" id="maskNote"></span>
+  </div>
+  <div class="grid2">
+    <div class="viz-frame">
+      <canvas class="viz" id="maskMatrix" style="cursor:default"></canvas>
+      <div class="cap" data-en="Row i may only look at columns j ≤ i. Hatched cells are masked to −∞."
+           data-bn="সারি i শুধু j ≤ i কলামের দিকে তাকাতে পারে। ছানিযুক্ত (hatch) ঘরগুলো −∞ করা।">সারি i শুধু j ≤ i কলামের দিকে তাকাতে পারে। ছানিযুক্ত (hatch) ঘরগুলো −∞ করা।</div>
+    </div>
+    <div class="card">
+      <h3 data-en="What changes when you toggle" data-bn="টগল করলে কী বদলায়">টগল করলে কী বদলায়</h3>
+      <p data-en="1. Every row becomes a one-way view: token 4 sees tokens 0–4 only."
+         data-bn="১. প্রতিটা সারি একমুখী দৃষ্টি পায়: টোকেন ৪ দেখে শুধু টোকেন ০–৪।">১. প্রতিটা সারি একমুখী দৃষ্টি পায়: টোকেন ৪ দেখে শুধু টোকেন ০–৪।</p>
+      <p data-en="2. Each row's weights re-normalize over the visible cells only."
+         data-bn="২. প্রতিটা সারির ওজন শুধু দৃশ্যমান ঘরগুলোর ওপরে আবার normalize হয়।">২. প্রতিটা সারির ওজন শুধু দৃশ্যমান ঘরগুলোর ওপরে আবার normalize হয়।</p>
+      <p data-en="3. The last token now carries the whole sentence's context — exactly the vector that predicts the next word."
+         data-bn="৩. এখন শেষ টোকেনই পুরো বাক্যের কনটেক্সট বহন করে — যে ভেক্টর দিয়ে পরের শব্দ অনুমান হয়, ঠিক সেটাই।">৩. এখন শেষ টোকেনই পুরো বাক্যের কনটেক্সট বহন করে — যে ভেক্টর দিয়ে পরের শব্দ অনুমান হয়, ঠিক সেটাই।</p>
+      <details class="deep">
+        <summary data-en="Deep dive: the parallel-training trick" data-bn="গভীরে: সমান্তরাল ট্রেনিংয়ের কৌশল">গভীরে: সমান্তরাল ট্রেনিংয়ের কৌশল</summary>
+        <div class="inner" data-en="During training the FULL sentence is fed at once. The mask guarantees that position i's prediction never uses position &gt;i — so we can predict every next-token target simultaneously in one pass, using GPUs to the max. At generation time no mask is even needed, because future tokens simply do not exist yet."
+             data-bn="ট্রেনিংয়ে পুরো বাক্য একসাথে ইনপুট দেওয়া হয়। মাস্ক নিশ্চিত করে পজিশন i-এর প্রেডিকশন কখনো পজিশন &gt;i ব্যবহার করবে না — তাই এক পাসেই সব পজিশনের 'পরের টোকেন' টার্গেট একসাথে প্রেডিক্ট করা যায়, GPU পুরোদমে ব্যবহার হয়। জেনারেশনের সময় মাস্ক দরকারই হয় না, কারণ ভবিষ্যতের টোকেন তখন আসলেই তৈরি হয়নি।">
+          During training the FULL sentence is fed at once. The mask guarantees that position i's prediction never uses position &gt;i — so we can predict every next-token target simultaneously in one pass, using GPUs to the max. At generation time no mask is even needed, because future tokens simply do not exist yet.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PIPELINE ================= -->
+<section class="sec" id="pipeline" data-kicker="the full loop · পুরো লুপ">
+  <h2 data-en="The full pipeline — one sentence, end to end" data-bn="পুরো পাইপলাইন — এক বাক্য, শুরু থেকে শেষ">পুরো পাইপলাইন — এক বাক্য, শুরু থেকে শেষ</h2>
+  <div class="story">
+    <span class="tag">walk through · ধাপে ধাপে</span>
+    <span data-en="Everything you just learned, stitched into ONE computation, with real numbers computed in your browser. Click the chips or use the arrows. This is inspired by the <b class='hl-cy'>Transformer Explainer</b> sandbox."
+         data-bn="তুমি এখন পর্যন্ত যা শিখলে, সব একসাথে জোড়া দাও — আসল সংখ্যাসহ, তোমার ব্রাউজারেই হিসাব হয়। চিপে ক্লিক করো বা তীর চাপো। অনুপ্রেরণা নেওয়া <b class='hl-cy'>Transformer Explainer</b> স্যান্ডবক্স থেকে।">
+      Everything you just learned, stitched into ONE computation, with real numbers computed in your browser. Click the chips or use the arrows. This is inspired by the <b class="hl-cy">Transformer Explainer</b> sandbox.</span>
+  </div>
+  <div class="controls">
+    <select id="pipePreset"></select>
+    <button class="btn sm" id="pipePrev" data-en="← Prev" data-bn="← আগের">← আগের</button>
+    <button class="btn sm primary" id="pipeNext" data-en="Next →" data-bn="পরের →">পরের →</button>
+    <span class="note" id="pipeCount"></span>
+  </div>
+  <div class="steps" id="pipeSteps"></div>
+  <div class="viz-frame">
+    <h3 id="pipeTitle" style="margin:4px 0 10px"></h3>
+    <div id="pipeCanvasBox"><canvas class="viz" id="pipeCanvas" style="cursor:pointer"></canvas></div>
+    <p class="cap" id="pipeDesc"></p>
+  </div>
+</section>
+
+<!-- ================= OUTPUT ================= -->
+<section class="sec" id="output" data-kicker="the finish line · শেষ পয়েন্ট">
+  <h2 data-en="Output — logits, softmax, sampling: how words are born" data-bn="আউটপুট — লজিটস, সফটম্যাক্স, স্যাম্পলিং: শব্দের জন্ম">আউটপুট — লজিটস, সফটম্যাক্স, স্যাম্পলিং: শব্দের জন্ম</h2>
+  <div class="story">
+    <span class="tag">story · গল্প</span>
+    <span data-en="At the very top, the transformer hands you a list of <b class='hl-cy'>logits</b> — one raw score for every token in the vocabulary. Softmax turns them into probabilities, and <b class='hl-go'>sampling</b> picks one — that is the word you see appear in ChatGPT. Then the whole pipeline runs again with the new token appended. Press Sample many times and watch the histogram converge to the distribution: random individual picks, predictable long run."
+         data-bn="সবার শেষে transformer তোমার হাতে ধরিয়ে দেয় <b class='hl-cy'>লজিটস</b>-এর তালিকা — ভোকাবুলারির প্রতিটা টোকেনের জন্য একটা কাঁচা স্কোর। Softmax ওদের বানায় প্রোবাবিলিটি, আর <b class='hl-go'>স্যাম্পলিং</b> একটা বেছে নেয় — ChatGPT-তে যে শব্দটা চোখের সামনে আবির্ভূত হয়, সেটাই। তারপর নতুন টোকেন জুড়ে পুরো পাইপলাইন আবার চলে। Sample চাপতেই থাকো — হিস্টোগ্রাম কীভাবে বণ্টনের দিকে মুখ করে, দেখো: বেছে নেওয়া প্রতিটাটা এলোমেলো, কিন্তু লাখো বার মিললে ফল অনুমেয়।">
+      At the very top, the transformer hands you a list of <b class="hl-cy">logits</b> — one raw score for every token in the vocabulary. Softmax turns them into probabilities, and <b class="hl-go">sampling</b> picks one — that is the word you see appear in ChatGPT. Then the whole pipeline runs again with the new token appended. Press Sample many times and watch the histogram converge to the distribution: random individual picks, predictable long run.</span>
+  </div>
+  <div class="controls">
+    <select id="outPreset"></select>
+    <label class="rng"><span data-en="temperature" data-bn="টেম্পারেচার">টেম্পারেচার</span>
+      <input type="range" id="outTemp" min="0.2" max="2.5" step="0.05" value="1" style="width:170px">
+      <b class="val" id="outTempVal">1.00</b></label>
+    <button class="btn primary" id="outSampleBtn" data-en="Sample next token" data-bn="পরের টোকেন স্যাম্পল করো">পরের টোকেন স্যাম্পল করো</button>
+    <button class="btn" id="outResetBtn" data-en="Reset" data-bn="রিসেট">রিসেট</button>
+  </div>
+  <div class="grid2">
+    <div class="viz-frame">
+      <canvas class="viz" id="outBars" height="300"></canvas>
+      <div class="cap" data-en="Probability distribution over candidate next-tokens (toy logits)" data-bn="পরের টোকেনের প্রার্থীদের ওপরে প্রোবাবিলিটি বণ্টন (টয় লজিট)">পরের টোকেনের প্রার্থীদের ওপরে প্রোবাবিলিটি বণ্টন (টয় লজিট)</div>
+    </div>
+    <div class="viz-frame">
+      <canvas class="viz" id="outCounts" height="300"></canvas>
+      <div class="cap" id="outCountsCap"></div>
+    </div>
+  </div>
+  <p class="note" id="outStatus" style="margin-top:10px"></p>
+  <details class="deep">
+    <summary data-en="Deep dive: top-k, top-p, and why ChatGPT sounds human" data-bn="গভীরে: top-k, top-p, আর ChatGPT মানুষের মতো কেন শোনায়">গভীরে: top-k, top-p, আর ChatGPT মানুষের মতো কেন শোনায়</summary>
+    <div class="inner" data-en="Pure sampling occasionally lands on nonsense, so real systems trim the tail first: top-k keeps only the k highest, top-p (nucleus) keeps the smallest set whose probabilities sum to p (e.g. 0.9). Greedy decoding (always argmax) is safe but repetitive — models answer 'the same thing twice'. Temperature near 0 behaves like greedy; near 2, like a poet on espresso. Tools you use daily sit around 0.7–1.0."
+         data-bn="খাঁটি স্যাম্পলিং মাঝে মাঝে অর্থহীন শব্দে পড়ে, তাই আসল সিস্টেম আগে লেজটা ছেঁটে ফেলে: top-k রাখে শুধু সর্বোচ্চ k-টা, top-p (নিউক্লিয়াস) রাখে সবচেয়ে ছোট সেট যার প্রোবাবিলিটির যোগফল p (যেমন ০.৯)। Greedy ডিকোডিং (সবসময় সর্বোচ্চটা) নিরাপদ কিন্তু একঘেয়ে — মডেল একই কথা বারবার বলে। টেম্পারেচার ০-এর কাছে হলে greedy-র মতো, ২-এর কাছে হলে এসপ্রেসো-নেওয়া কবির মতো। তোমার প্রতিদিনের টুলগুলো বসে থাকে ০.৭–১.০ এর মধ্যে।">
+      Pure sampling occasionally lands on nonsense, so real systems trim the tail first: top-k keeps only the k highest, top-p (nucleus) keeps the smallest set whose probabilities sum to p (e.g. 0.9). Greedy decoding (always argmax) is safe but repetitive — models answer 'the same thing twice'. Temperature near 0 behaves like greedy; near 2, like a poet on espresso. Tools you use daily sit around 0.7–1.0.</div>
+  </details>
+</section>
+
+<!-- ================= MATH ================= -->
+<section class="sec" id="math" data-kicker="complex → easy · জটিল → সহজ">
+  <h2 data-en="The math, twice — rigorous and human" data-bn="গণিত, দুইবার — কঠোরভাবে এবং মানুষের ভাষায়">গণিত, দুইবার — কঠোরভাবে এবং মানুষের ভাষায়</h2>
+  <div class="controls">
+    <button class="btn on" id="mStory" data-en="Story mode" data-bn="গল্প মোড">গল্প মোড</button>
+    <button class="btn" id="mMath" data-en="Math mode" data-bn="গণিত মোড">গণিত মোড</button>
+    <span class="note" data-en="Same ideas, two altitudes. Switch freely." data-bn="একই ভাবনা, দুই উচ্চতায়। যেচ্ছা সুইচ করো।">একই ভাবনা, দুই উচ্চতায়। যেচ্ছা সুইচ করো।</span>
+  </div>
+
+  <div id="mathStory">
+    <div class="card mstep"><span class="st">১ · রূপকথার সংস্করণ — সহজ ভাষায়</span>
+      <span data-en="Step 1 — Every token writes three notes: what I want (Q), what I offer (K), what I will hand over (V)." data-bn="ধাপ ১ — প্রতিটা টোকেন তিনটা নোট লেখে: আমি কী চাই (Q), আমি কী অফার করি (K), আমি কী বুঝিয়ে দেব (V)।">ধাপ ১ — প্রতিটা টোকেন তিনটা নোট লেখে: আমি কী চাই (Q), আমি কী অফার করি (K), আমি কী বুঝিয়ে দেব (V)।</span></div>
+    <div class="card mstep"><span class="st">২</span>
+      <span data-en="Step 2 — Each query interviews every key. The interview score is just a dot product — a similarity meter." data-bn="ধাপ ২ — প্রতিটা কুয়েরি প্রতিটা কী-এর সাক্ষাৎকার নেয়। সাক্ষাৎকারের স্কোর আসলে শুধুই একটা ডট প্রোডাক্ট — সাদৃশ্যের মিটার।">ধাপ ২ — প্রতিটা কুয়েরি প্রতিটা কী-এর সাক্ষাৎকার নেয়। সাক্ষাৎকারের স্কোর আসলে শুধুই একটা ডট প্রোডাক্ট — সাদৃশ্যের মিটার।</span></div>
+    <div class="card mstep"><span class="st">৩</span>
+      <span data-en="Step 3 — Scores are divided by √dk (volume control) and softened into percentages with softmax." data-bn="ধাপ ৩ — স্কোরকে √dk দিয়ে ভাগ করা হয় (ভলিউম কন্ট্রোল), তারপর softmax দিয়ে নরম শতাংশে রূপান্তর।">ধাপ ৩ — স্কোরকে √dk দিয়ে ভাগ করা হয় (ভলিউম কন্ট্রোল), তারপর softmax দিয়ে নরম শতাংশে রূপান্তর।</span></div>
+    <div class="card mstep"><span class="st">৪</span>
+      <span data-en="Step 4 — Each token receives a weighted average of all the values: mostly from whoever scored highest, a pinch from everyone else. Its meaning is now contextual — 'it' finally knows it means the mouse." data-bn="ধাপ ৪ — প্রতিটা টোকেন পায় সব ভ্যালুর ওজনসহ গড়: বেশিরভাগ আসে যার স্কোর সর্বোচ্চ, আর সবার থেকে এক চিমটি। এবার তার অর্থ কনটেক্সট-সচেতন — 'সে' অবশেষে জানে সে আসলে ইঁদুর।">ধাপ ৪ — প্রতিটা টোকেন পায় সব ভ্যালুর ওজনসহ গড়: বেশিরভাগ আসে যার স্কোর সর্বোচ্চ, আর সবার থেকে এক চিমটি। এবার তার অর্থ কনটেক্সট-সচেতন — 'সে' অবশেষে জানে সে আসলে ইঁদুর।</span></div>
+    <div class="card mstep"><span class="st">৫</span>
+      <span data-en="Step 5 — Repeat the block N times (each layer refines meaning further), then project onto the vocabulary and softmax: the next token is sampled. That is ChatGPT, end to end." data-bn="ধাপ ৫ — ব্লকটা N বার চলে (প্রতি লেয়ার অর্থকে আরও পরিশীলিত করে), তারপর ভোকাবুলারিতে প্রজেক্ট করে softmax: পরের টোকেন স্যাম্পল হয়। ব্যস, ChatGPT শুরু থেকে শেষ।">ধাপ ৫ — ব্লকটা N বার চলে (প্রতি লেয়ার অর্থকে আরও পরিশীলিত করে), তারপর ভোকাবুলারিতে প্রজেক্ট করে softmax: পরের টোকেন স্যাম্পল হয়। ব্যস, ChatGPT শুরু থেকে শেষ।</span></div>
+  </div>
+
+  <div id="mathDerive" style="display:none">
+    <div class="mathbox mstep"><span class="st" data-en="1 · Projections" data-bn="১ · প্রজেকশন">১ · প্রজেকশন</span>
+      $$Q=XW_Q,\quad K=XW_K,\quad V=XW_V\qquad W_Q,W_K\in\mathbb{R}^{d\times d_k}$$
+      <p class="note" data-en="X ∈ ℝ^(n×d) holds the n input token vectors. Each projection is a learned linear map." data-bn="X ∈ ℝ^(n×d) = nটা ইনপুট টোকেন ভেক্টর। প্রতিটা প্রজেকশন একটা শেখা লিনিয়ার ম্যাপ।">X ∈ ℝ^(n×d) = nটা ইনপুট টোকেন ভেক্টর। প্রতিটা প্রজেকশন একটা শেখা লিনিয়ার ম্যাপ।</p></div>
+    <div class="mathbox mstep"><span class="st" data-en="2 · Scores &amp; scaling" data-bn="২ · স্কোর ও স্কেলিং">২ · স্কোর ও স্কেলিং</span>
+      $$S=\frac{QK^{\top}}{\sqrt{d_k}}\in\mathbb{R}^{n\times n}\qquad s_{ij}=\frac{q_i\cdot k_j}{\sqrt{d_k}}$$
+      <p class="note" data-en="S_ij measures how relevant key j is to query i; the √dk keeps variance ≈ 1." data-bn="S_ij মাপে কী j কুয়েরি i-এর কতটা প্রাসঙ্গিক; √dk ভ্যারিয়েন্স ≈ ১ রাখে।">S_ij মাপে কী j কুয়েরি i-এর কতটা প্রাসঙ্গিক; √dk ভ্যারিয়েন্স ≈ ১ রাখে।</p></div>
+    <div class="mathbox mstep"><span class="st" data-en="3 · Optional causal mask" data-bn="৩ · ঐচ্ছিক কজ্যুয়াল মাস্ক">৩ · ঐচ্ছিক কজ্যুয়াল মাস্ক</span>
+      $$\tilde{s}_{ij}=s_{ij}+(j>i)\,(-\infty)$$</div>
+    <div class="mathbox mstep"><span class="st" data-en="4 · Row-wise softmax" data-bn="৪ · সারি-ভিত্তিক সফটম্যাক্স">৪ · সারি-ভিত্তিক সফটম্যাক্স</span>
+      $$a_{ij}=\frac{\exp(\tilde{s}_{ij})}{\sum_{j'}\exp(\tilde{s}_{ij'})}\qquad \sum_j a_{ij}=1$$</div>
+    <div class="mathbox mstep"><span class="st" data-en="5 · Context = weighted sum of values" data-bn="৫ · কনটেক্সট = ভ্যালুর ওজনসমষ্টি">৫ · কনটেক্সট = ভ্যালুর ওজনসমষ্টি</span>
+      $$\text{out}_i=\sum_j a_{ij}\,v_j\qquad \text{Attention}(Q,K,V)=AV$$</div>
+    <div class="mathbox mstep"><span class="st" data-en="6 · Multi-head + residual" data-bn="৬ · মাল্টি-হেড + রেসিডুয়াল">৬ · মাল্টি-হেড + রেসিডুয়াল</span>
+      $$\mathrm{MHA}(X)=\big[\text{head}_1\|\cdots\|\text{head}_h\big]W_O,\qquad X'=X+\mathrm{MHA}(\text{LN}(X))$$</div>
+  </div>
+
+  <div class="card" id="mathExample">
+    <h3 id="exTitle"></h3>
+    <div id="exBody"></div>
+  </div>
+</section>
+<!-- ================= 3D ================= -->
+<section class="sec" id="d3" data-kicker="3-d · ত্রিমাত্রিক">
+  <h2 data-en="3-D explorers — rotate, zoom, click" data-bn="৩-ডি এক্সপ্লোরার — ঘোরাও, জুম করো, ক্লিক করো">৩-ডি এক্সপ্লোরার — ঘোরাও, জুম করো, ক্লিক করো</h2>
+  <div class="story">
+    <span class="tag">dimension 3 · তৃতীয় মাত্রা</span>
+    <span data-en="Two Three.js scenes, built from scratch in the spirit of <b class='hl-cy'>bbycroft.net/llm</b>. Left: the whole transformer as a building you can walk around. Right: the attention matrix as a landscape of towers — every tower is one attention weight."
+         data-bn="দুটো Three.js সিন, <b class='hl-cy'>bbycroft.net/llm</b>-এর আত্মায় শূন্য থেকে বানানো। বাঁয়ে: পুরো transformer, একটা ভবনের মতো — চারপাশে ঘুরে দেখা যায়। ডানে: attention ম্যাট্রিক্স, টাওয়ারের ল্যান্ডস্কেপ হিসেবে — প্রতিটা টাওয়ারই একটা attention ওজন।">
+      Two Three.js scenes, built from scratch in the spirit of <b class="hl-cy">bbycroft.net/llm</b>. Left: the whole transformer as a building you can walk around. Right: the attention matrix as a landscape of towers — every tower is one attention weight.</span>
+  </div>
+  <div class="grid2">
+    <div class="viz-frame" style="padding:0;border:0">
+      <div class="three-wrap" id="threeArch">
+        <div class="three-hint" id="archHint"></div>
+        <div id="archInfo"></div>
+      </div>
+      <div class="controls" style="justify-content:center">
+        <label class="rng"><input type="checkbox" id="archRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
+      </div>
+    </div>
+    <div class="viz-frame" style="padding:0;border:0">
+      <div class="three-wrap" id="threeSurf">
+        <div class="three-hint" id="surfHint"></div>
+      </div>
+      <div class="controls" style="justify-content:center">
+        <select id="surfHead"></select>
+        <label class="rng"><input type="checkbox" id="surfRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
+      </div>
+      <div class="legend" id="surfLegend"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VIDEOS ================= -->
+<section class="sec" id="videos" data-kicker="learn from the best · সেরাদের থেকে শেখা">
+  <h2 data-en="The best videos on attention — curated &amp; embedded" data-bn="Attention নিয়ে সেরা ভিডিওগুলো — বাছাই করা ও এমবেড করা">Attention নিয়ে সেরা ভিডিওগুলো — বাছাই করা ও এমবেড করা</h2>
+  <p class="lead" data-en="Hand-picked explanations from 3Blue1Brown, StatQuest, Andrej Karpathy and Umar Jamil — the four channels teachers cite most. Watch after playing with the visualizations above; each video answers questions this page raises."
+       data-bn="3Blue1Brown, StatQuest, Andrej Karpathy আর Umar Jamil-এর হাতে-বাছাই ব্যাখ্যা — শিক্ষকেরা যে চারটা চ্যানেলের নাম সবচেয়ে বেশি নেন। ওপরের ভিজ্যুয়ালাইজেশনগুলো নিয়ে খেলার পর দেখো; প্রতিটা ভিডিও এই পেজে উঠে আসা প্রশ্নের উত্তর দেয়।">
+    Hand-picked explanations from 3Blue1Brown, StatQuest, Andrej Karpathy and Umar Jamil — the four channels teachers cite most. Watch after playing with the visualizations above; each video answers questions this page raises.</p>
+  <div class="video-grid" id="videoGrid" style="margin-top:24px"></div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section class="sec" id="glossary" data-kicker="dictionary · অভিধান">
+  <h2 data-en="Glossary — 25 terms, both languages" data-bn="গ্লসারি — ২৫টা টার্ম, দুই ভাষাতেই">গ্লসারি — ২৫টা টার্ম, দুই ভাষাতেই</h2>
+  <input type="text" id="glosSearch" data-placeholder-en="Search a term…" data-placeholder-bn="টার্ম খোঁজো…" placeholder="টার্ম খোঁজো…">
+  <table class="tb"><thead><tr>
+    <th style="width:24%" data-en="Term" data-bn="টার্ম">টার্ম</th>
+    <th style="width:20%">বাংলা</th>
+    <th data-en="Meaning" data-bn="অর্থ">অর্থ</th>
+  </tr></thead><tbody id="glosBody"></tbody></table>
+</section>
+
+<!-- ================= CREDITS ================= -->
+<section class="sec" id="credits" data-kicker="standing on shoulders · কাঁধে দাঁড়িয়ে">
+  <h2 data-en="Credits &amp; inspirations" data-bn="ক্রেডিট ও অনুপ্রেরণা">ক্রেডিট ও অনুপ্রেরণা</h2>
+  <p class="lead" data-en="This site was built by combining the best ideas from six landmark visualizations. Open them all — each one goes deeper on a different axis."
+       data-bn="এই সাইটটা ছয়টা ল্যান্ডমার্ক ভিজ্যুয়ালাইজেশনের সেরা ভাবনাগুলো মিলিয়ে বানানো। সবগুলোই খুলে দেখো — প্রতিটা ভিন্ন দিক থেকে আরও গভীরে নিয়ে যায়।">
+    This site was built by combining the best ideas from six landmark visualizations. Open them all — each one goes deeper on a different axis.</p>
+  <div class="credit-grid" id="creditGrid" style="margin-top:22px"></div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap fgrid">
+    <div>
+      <div class="logo">attention<b>.expl</b></div>
+      <p data-en="Built with vanilla JavaScript, Canvas, SVG, Three.js and KaTeX. Everything computes locally in your browser — no data leaves your device."
+         data-bn="বানানো হয়েছে vanilla JavaScript, Canvas, SVG, Three.js আর KaTeX দিয়ে। সব হিসাব হয় তোমার ব্রাউজারেই — কোনো ডেটা ডিভাইস ছাড়ে না।">
+        Built with vanilla JavaScript, Canvas, SVG, Three.js and KaTeX. Everything computes locally in your browser — no data leaves your device.</p>
+    </div>
+    <div>
+      <a href="https://github.com/Hisernberg/attention-fully-explained" target="_blank" rel="noopener">GitHub — Hisernberg/attention-fully-explained</a><br>
+      <a href="https://huggingface.co/spaces/Nabidnur/attention-fully-explained" target="_blank" rel="noopener">Hugging Face Space — Nabidnur/attention-fully-explained</a><br>
+      <span data-en="Made by Nabid Nur · MIT License" data-bn="নির্মাতা Nabid Nur · MIT লাইসেন্স">নির্মাতা Nabid Nur · MIT লাইসেন্স</span>
+    </div>
+  </div>
+</footer>
+
+<div id="surfTip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/viz2d.js"></script>
+<script src="js/viz3d.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
