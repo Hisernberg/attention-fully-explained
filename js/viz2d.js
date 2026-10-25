@@ -210,7 +210,7 @@ const VIZ = (() => {
     el.innerHTML = DATA.scatter.map(w =>
       `<span class="tok" data-w="${w.w}"><span class="t">${lang === 'bn' ? w.bn : w.w}</span></span>`).join('');
     el.querySelectorAll('.tok').forEach(t => t.onclick = () => {
-      embWord = t.dataset.w; R.embHeat(lang); highlight();
+      embWord = t.dataset.w; R.embHeat(lang); R.embVecTable(lang); highlight();
     });
     const highlight = () => el.querySelectorAll('.tok').forEach(t =>
       t.classList.toggle('q', t.dataset.w === embWord));
@@ -624,6 +624,313 @@ const VIZ = (() => {
       tbl('S = QKᵀ/√4', S, toks) +
       tbl('A = softmax(S)', A, toks) +
       tbl('out = A·V', O, ['d1', 'd2', 'd3', 'd4']);
+  };
+
+  /* =========================================================
+     DEEP-DIVE 2D — TOKENIZER LAB
+     ========================================================= */
+
+  /* ---------- BPE merge lab ---------- */
+  R.tokLab = (lang) => {
+    if (!DATA._bpe) DATA._bpe = Engine.bpeTrain(DATA.bpe.corpus, 8);
+    const bpe = DATA._bpe;
+    const step = App.bpeStep || 0;
+    /* corpus words as piece-chips */
+    const wordsNow = step === 0 ? bpe.corpus.map(w => w.split('')) : bpe.hist[step - 1].words;
+    document.getElementById('bpeCorpus').innerHTML = wordsNow.map(w =>
+      `<span class="wchip">${w.map(p => `<b>${esc(p)}</b>`).join('<i>·</i>')}</span>`).join('');
+    /* merge-step chips 0..8 */
+    const sc = document.getElementById('bpeStepChips');
+    if (!sc.children.length){
+      for (let i = 0; i <= 8; i++){
+        const b = document.createElement('button');
+        b.className = 'stepchip'; b.textContent = i === 0 ? (lang === 'bn' ? 'অক্ষর' : 'chars') : i;
+        b.onclick = () => { stopBpePlay(); App.bpeStep = i; R.tokLab(App.lang); };
+        sc.appendChild(b);
+      }
+    }
+    [...sc.children].forEach((b, i) =>
+      b.className = 'stepchip' + (i < step ? ' done' : '') + (i === step ? ' on' : ''));
+    /* current merge line */
+    const nowLine = document.getElementById('bpeNow');
+    if (step === 0){
+      nowLine.innerHTML = lang === 'bn'
+        ? 'শুরু: প্রতিটা শব্দ অক্ষরে ভাঙা — ভোকাবুলারিতে সব অক্ষর আছে, বাকি কিছু নেই।'
+        : 'Start: every word is broken into characters — the vocabulary holds only letters.';
+    } else {
+      const h = bpe.hist[step - 1];
+      nowLine.innerHTML = `<b class="hl-go">${esc(h.a)} + ${esc(h.b)} → "${esc(h.merged)}"</b> ` +
+        `<span class="note">(${I18N[lang].mergedThis} · ×${h.count})</span>`;
+    }
+    /* pair-count bars: state BEFORE next merge */
+    const pairsBox = document.getElementById('bpePairs');
+    const nextH = bpe.hist[step]; /* merge that WOULD happen next */
+    const tops = step === 0 ? nextH.top : bpe.hist[step - 1].top;
+    const maxC = Math.max(...tops.map(t => t[1]));
+    pairsBox.innerHTML = tops.map(([p, c], k) => {
+      const isNext = nextH && step < 8 && p[0] === nextH.a && p[1] === nextH.b;
+      return `<div class="pairrow${isNext ? ' nx' : ''}">
+        <span class="pp mono">${esc(p[0])} + ${esc(p[1])}</span>
+        <span class="pbar"><span style="width:${(c / maxC) * 100}%"></span></span>
+        <span class="pc mono">×${c}</span>${isNext ? '<span class="ptag">→</span>' : ''}</div>`;
+    }).join('');
+    /* vocabulary */
+    const vocab = step === 0 ? bpe.initVocab : bpe.hist[step - 1].vocab;
+    const fresh = step === 0 ? null : bpe.hist[step - 1].merged;
+    document.getElementById('bpeVocab').innerHTML = vocab.map(v =>
+      `<span class="mono vchip${v === fresh ? ' fresh' : ''}">${esc(v)}</span>`).join('');
+    /* apply box */
+    document.getElementById('bpeApplyBtn').onclick = () => {
+      const w = document.getElementById('bpeWordInput').value.trim().replace(/[^A-Za-z]/g, '');
+      if (!w) return;
+      const pieces = Engine.bpeApply(w, bpe.merges.slice(0, step));
+      document.getElementById('bpeOut').innerHTML =
+        pieces.map(p => `<span class="tok sub"><span class="t">${esc(p)}</span></span>`).join('');
+    };
+  };
+  let bpePlayTimer = null;
+  function stopBpePlay(){
+    if (bpePlayTimer){ clearInterval(bpePlayTimer); bpePlayTimer = null;
+      const b = document.getElementById('bpePlayBtn');
+      if (b){ b.textContent = I18N[App.lang].playMerge; b.classList.remove('on'); } }
+  }
+  R.tokLabPlay = () => {
+    if (bpePlayTimer){ stopBpePlay(); return; }
+    if ((App.bpeStep || 0) >= 8) App.bpeStep = 0;
+    const b = document.getElementById('bpePlayBtn');
+    b.textContent = I18N[App.lang].stopMerge; b.classList.add('on');
+    bpePlayTimer = setInterval(() => {
+      App.bpeStep = Math.min((App.bpeStep || 0) + 1, 8);
+      R.tokLab(App.lang);
+      if (App.bpeStep >= 8) stopBpePlay();
+    }, 950);
+  };
+
+  /* ---------- byte anatomy ---------- */
+  R.tokBytes = (lang) => {
+    const text = App.byteText || 'বিড়ালটি মাদুরে বসেছিল';
+    const chars = [...text];
+    const row = document.getElementById('byteRow');
+    row.innerHTML = chars.map((c, i) => {
+      if (c === ' ') return '<span class="bspace"></span>';
+      const n = Engine.bytesOf(c).length;
+      return `<button class="bcell${n > 1 ? ' multi' : ''}${i === (App.byteSel || 0) ? ' sel' : ''}" data-i="${i}" data-b="${n}">
+        <span class="bc">${esc(c)}</span><span class="bn mono">${n}</span></button>`;
+    }).join('');
+    row.querySelectorAll('.bcell').forEach(b => b.onclick = () => {
+      App.byteSel = +b.dataset.i; R.tokBytes(App.lang);
+    });
+    /* stats (letters only) */
+    const letters = chars.filter(c => c !== ' ');
+    const bytes = Engine.bytesOf(letters.join('')).length;
+    document.getElementById('byteStats').innerHTML =
+      `<span><b class="hl-cy mono">${letters.length}</b> ${I18N[lang].byteChars}</span>
+       <span><b class="hl-go mono">${bytes}</b> ${I18N[lang].byteBytes}</span>
+       <span><b class="hl-vi mono">${(bytes / letters.length).toFixed(1)}×</b> ${I18N[lang].byteRatio}</span>`;
+    /* detail for selected */
+    const selC = chars[App.byteSel || 0];
+    const bs = Engine.bytesOf(selC || ' ').map(Engine.byteHex);
+    document.getElementById('byteDetail').innerHTML = selC && selC !== ' '
+      ? `<span class="mono bc-big">${esc(selC)}</span> <span class="note">${I18N[lang].byteOne}</span>
+         <span class="mono bytehex">${bs.join(' ')}</span>
+         <span class="note mono">U+${selC.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')} · ${bs.length} B</span>`
+      : I18N[lang].bytePick;
+  };
+
+  /* ---------- special tokens ---------- */
+  R.tokSpec = (lang) => {
+    document.getElementById('specGrid').innerHTML = DATA.specialTokens.map(s =>
+      `<div class="stok"><div class="st mono">${esc(s.t)}</div><p>${lang === 'bn' ? s.dbn : s.den}</p></div>`).join('');
+  };
+
+  /* ---------- three-tokenizer comparison ---------- */
+  R.tokCompare = (lang) => {
+    const text = document.getElementById('tokInput').value || '';
+    const nWord = (text.trim().match(/\S+/g) || []).length;
+    const nPiece = Engine.tokenize(text).length;
+    const nChar = [...text.replace(/\s/g, '')].length;
+    const rows = [
+      {k: I18N[lang].cmpWord, n: nWord, c: '#5ef2b8'},
+      {k: I18N[lang].cmpPiece, n: nPiece, c: '#3fe0ff'},
+      {k: I18N[lang].cmpChar, n: nChar, c: '#ff6ec7'}
+    ];
+    const max = Math.max(nChar, nPiece, nWord, 1);
+    document.getElementById('cmpBody').innerHTML = rows.map(r =>
+      `<div class="cmprow"><span class="ck">${r.k}</span>
+       <span class="cbar"><span style="width:${(r.n / max) * 100}%;background:${r.c}"></span></span>
+       <span class="cn mono">${r.n}</span></div>`).join('');
+  };
+
+  /* =========================================================
+     DEEP-DIVE 2D — EMBEDDING INSPECTOR
+     ========================================================= */
+  const DIMMEAN = {
+    en: ['meaning map · x', 'meaning map · y', 'animal-ness', 'royalty / person',
+         'food-ness', 'action-ness', 'colour-ness', 'gender (king +, queen −)'],
+    bn: ['অর্থ-ম্যাপ · x', 'অর্থ-ম্যাপ · y', 'প্রাণীত্ব', 'রাজকীয়তা / ব্যক্তি',
+         'খাদ্যত্ব', 'ক্রিয়াত্ব', 'রঙত্ব', 'লিঙ্গ (রাজা +, রানী −)']
+  };
+  R.embVecTable = (lang) => {
+    const vec = Engine.embedToken(embWord);
+    const isSem = !!DATA.scatter.find(s => s.w === embWord);
+    document.getElementById('vecTable').innerHTML =
+      `<table class="tb vt"><thead><tr>
+        <th>${I18N[lang].dimName}</th><th style="width:34%"></th>
+        <th>${I18N[lang].dimValue}</th>${isSem ? `<th>${I18N[lang].dimMeaning}</th>` : ''}</tr></thead>
+      <tbody>${vec.map((v, d) => `<tr>
+        <td class="mono">d${d}</td>
+        <td><span class="vbar"><span style="left:${v < 0 ? 50 + v * 50 : 50}%;width:${Math.abs(v) * 50}%;${v < 0 ? 'background:var(--pk)' : 'background:var(--cy)'}"></span><i style="left:50%"></i></span></td>
+        <td class="mono">${v.toFixed(2)}</td>
+        ${isSem ? `<td class="note">${DIMMEAN[lang][d]}</td>` : ''}</tr>`).join('')}</tbody></table>
+      <p class="note">${isSem ? I18N[lang].vecNote :
+        (lang === 'bn' ? 'এই শব্দটা ডেমো-টেবিলে নেই — তাই ভেক্টরটা টয় হ্যাশ-র‍্যান্ডম। ওপরের ১৯টা শব্দে ক্লিক করলে অর্থবহ ডাইম দেখা যাবে।' :
+        'This word is not in the demo table, so its vector is toy-hash random. Click one of the 19 map words above to see meaningful dims.')}</p>`;
+  };
+
+  /* ---------- one-hot × E ---------- */
+  R.embOneHot = (lang) => {
+    const words = DATA.onehotWords;
+    const sel = App.onehotWord || words[0];
+    const selEl = document.getElementById('ohWordSel');
+    if (!selEl.options.length){
+      fillSelectLocal(selEl, words);
+      selEl.onchange = () => { App.onehotWord = selEl.value; R.embOneHot(App.lang); };
+    }
+    selEl.value = sel;
+    /* E matrix: 6 rows × 8 dims, label inline per row */
+    const E = words.map(w => Engine.embedToken(w));
+    document.getElementById('ohGrid').innerHTML =
+      words.map((w, i) =>
+        `<div class="ohrow${w === sel ? ' hit' : ''}">` +
+        `<span class="ohlab mono${w === sel ? ' hitl' : ''}">${esc(w)}</span>` +
+        E[i].map(v => `<span class="ohc mono">${v.toFixed(1)}</span>`).join('') +
+        `</div>`).join('');
+    /* one-hot strip */
+    document.getElementById('ohOneHot').innerHTML = words.map((w, i) =>
+      `<span class="ohone mono${w === sel ? ' hot' : ''}">${w === sel ? 1 : 0}</span>`).join('');
+    /* result strip */
+    const r = Engine.embedToken(sel);
+    document.getElementById('ohResult').innerHTML =
+      r.map(v => `<span class="ohone mono r">${v.toFixed(1)}</span>`).join('');
+    document.getElementById('ohGo').onclick = () => {
+      const g = document.getElementById('ohGrid');
+      g.classList.remove('anim'); void g.offsetWidth; g.classList.add('anim');
+      document.getElementById('ohOneHot').classList.remove('flash');
+      void document.getElementById('ohOneHot').offsetWidth;
+      document.getElementById('ohOneHot').classList.add('flash');
+    };
+  };
+  function fillSelectLocal(sel, opts){
+    sel.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join('');
+  }
+
+  /* ---------- cosine similarity calculator ---------- */
+  R.cosCalc = (lang) => {
+    const words = DATA.scatter.map(s => s.w);
+    const sa = document.getElementById('cosA'), sb = document.getElementById('cosB');
+    if (!sa.options.length){
+      const opts = words.map(w => `<option value="${w}">${w}</option>`).join('');
+      sa.innerHTML = opts; sb.innerHTML = opts;
+      sa.onchange = () => { App.cosA = sa.value; R.cosCalc(App.lang); };
+      sb.onchange = () => { App.cosB = sb.value; R.cosCalc(App.lang); };
+      document.getElementById('cosPresets').innerHTML = DATA.cosPresets.map(([a, b]) =>
+        `<button class="btn sm" data-a="${a}" data-b="${b}">${a} · ${b}</button>`).join('');
+      document.getElementById('cosPresets').querySelectorAll('button').forEach(btn =>
+        btn.onclick = () => { App.cosA = btn.dataset.a; App.cosB = btn.dataset.b; R.cosCalc(App.lang); });
+    }
+    const A = App.cosA || 'cat', B = App.cosB || 'dog';
+    sa.value = A; sb.value = B;
+    const va = Engine.embedToken(A), vb = Engine.embedToken(B);
+    const dotV = Engine.dot(va, vb), na = Engine.norm(va), nb = Engine.norm(vb);
+    const cos = Engine.cosSim(va, vb);
+    const terms = va.map((x, i) => `(${x.toFixed(2)}×${vb[i].toFixed(2)})`).join(' + ');
+    const verdict = cos > 0.75 ? I18N[lang].verdictHi : cos > 0.45 ? I18N[lang].verdictMid :
+      cos > 0.1 ? I18N[lang].verdictLow : cos > -0.15 ? I18N[lang].verdictNone : I18N[lang].verdictNeg;
+    const vColor = cos > 0.45 ? 'var(--gr)' : cos > 0.1 ? 'var(--cy)' : cos > -0.15 ? 'var(--go)' : 'var(--pk)';
+    const deg = (Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI).toFixed(0);
+    document.getElementById('cosSteps').innerHTML = `
+      <div class="cosrow"><span class="cl">${I18N[lang].cosDot}</span>
+        <span class="cv mono" style="font-size:11.5px">${I18N[lang].cosShow} ${terms} = <b>${dotV.toFixed(2)}</b></span></div>
+      <div class="cosrow"><span class="cl">${I18N[lang].cosNormA}</span><span class="cv mono">${na.toFixed(3)}</span></div>
+      <div class="cosrow"><span class="cl">${I18N[lang].cosNormB}</span><span class="cv mono">${nb.toFixed(3)}</span></div>
+      <div class="cosrow big"><span class="cl">${I18N[lang].cosRes}</span>
+        <span class="cv mono">${dotV.toFixed(2)} / (${na.toFixed(2)}·${nb.toFixed(2)}) = <b style="color:${vColor}">${cos.toFixed(3)}</b></span></div>
+      <div class="cosverdict" style="border-color:${vColor}"><b style="color:${vColor}">${verdict}</b>
+        <span class="note">· ${I18N[lang].angle} ≈ ${deg}°</span></div>`;
+    /* angle sketch */
+    const cv = document.getElementById('cosCanvas');
+    const {ctx, w, h} = setup(cv, 170);
+    ctx.clearRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2 + 14, R0 = Math.min(w, h) / 2 - 26;
+    const pa = DATA.scatter.find(s => s.w === A), pb = DATA.scatter.find(s => s.w === B);
+    const angA = Math.atan2(-(pa.y), pa.x);
+    const theta = Math.acos(Math.max(-1, Math.min(1, cos)));
+    const angB = angA - theta * ((pa.x * pb.y - pa.y * pb.x) >= 0 ? -1 : 1);
+    ctx.strokeStyle = 'rgba(122,180,255,0.18)';
+    ctx.beginPath(); ctx.arc(cx, cy, R0, 0, 7); ctx.stroke();
+    const drawVec = (ang, col, lab) => {
+      const X = cx + Math.cos(ang) * R0, Y = cy + Math.sin(ang) * R0;
+      arrow(ctx, cx, cy, X, Y, col, 2.2);
+      ctx.fillStyle = col; ctx.font = F(12.5); ctx.textAlign = 'center';
+      ctx.fillText(lab, cx + Math.cos(ang) * (R0 + 16), cy + Math.sin(ang) * (R0 + 16) + 4);
+    };
+    drawVec(angA, '#3fe0ff', A);
+    drawVec(angB, '#ffcf6e', B);
+    /* arc between */
+    ctx.strokeStyle = '#ff6ec7'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(cx, cy, 26, Math.min(angA, angB), Math.max(angA, angB)); ctx.stroke();
+    ctx.fillStyle = '#ff6ec7'; ctx.font = FM(11); ctx.textAlign = 'center';
+    const midA = (angA + angB) / 2;
+    ctx.fillText(deg + '°', cx + Math.cos(midA) * 40, cy + Math.sin(midA) * 40 + 3);
+  };
+
+  /* ---------- QKV interactive inspector ---------- */
+  R.qkvPanel = (lang) => {
+    const preset = App.attPreset;
+    if (!DATA._qkvCache || DATA._qkvCache.preset !== preset)
+      DATA._qkvCache = {preset, c: Engine.compute(DATA.presets[preset].tokens, 1)};
+    const {c} = DATA._qkvCache;
+    const p = DATA.presets[preset];
+    const selEl = document.getElementById('qkvTok');
+    if (!selEl.options.length || selEl._n !== p.tokens.length){
+      selEl.innerHTML = p.tokens.map((t, i) => `<option value="${i}">${esc(t)}</option>`).join('');
+      selEl._n = p.tokens.length;
+      selEl.onchange = () => { App.qkvTok = +selEl.value; R.qkvPanel(App.lang); };
+    }
+    if (App.qkvTok === undefined || App.qkvTok >= p.tokens.length) App.qkvTok = p.focus;
+    selEl.value = App.qkvTok;
+    const i = App.qkvTok;
+    const rows = [
+      {lab: I18N[lang].qkvX, vec: c.X[i], col: '#8f7bff'},
+      {lab: 'Q', vec: c.Q[i], col: '#3fe0ff'},
+      {lab: 'K', vec: c.K[i], col: '#5ef2b8'},
+      {lab: 'V', vec: c.V[i], col: '#ffcf6e'}
+    ];
+    const cv = document.getElementById('qkvCanvas');
+    const {ctx, w, h} = setup(cv, 240);
+    ctx.clearRect(0, 0, w, h);
+    const maxV = 1.4;
+    rows.forEach((r, k) => {
+      const y = 18 + k * 58;
+      ctx.fillStyle = r.col; ctx.font = F(13); ctx.textAlign = 'left';
+      ctx.fillText(r.lab, 6, y + 8);
+      const bw = (w - 90) / 2, x0 = 52;
+      r.vec.forEach((v, d) => {
+        const bx = x0 + d * ((w - 62) / 8);
+        const bh = (v / maxV) * 18;
+        ctx.fillStyle = v >= 0 ? r.col : 'rgba(255,110,199,0.75)';
+        const bw2 = (w - 62) / 8 - 5;
+        ctx.fillRect(bx, y + 14 - Math.max(bh, 0), bw2, Math.abs(bh) || 1);
+        ctx.fillStyle = '#93a7cc'; ctx.font = FM(9.5); ctx.textAlign = 'center';
+        ctx.fillText(v.toFixed(1), bx + bw2 / 2, y + 40);
+      });
+    });
+    /* raw score row */
+    const S = c.S[i];
+    document.getElementById('qkvScores').innerHTML =
+      `<span class="note" style="display:block;margin-bottom:6px">${I18N[lang].qkvScoreRow}</span>` +
+      p.tokens.map((t, j) => `<span class="tok"><span class="t">${esc(t)}</span>
+        <span class="id mono">${S[j].toFixed(2)}</span></span>`).join('');
   };
 
   /* ---------- hero animation ---------- */

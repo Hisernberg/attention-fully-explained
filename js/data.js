@@ -66,28 +66,62 @@ const DATA = {
       dbn:'স্কেল + attention = LLM। একই মেকানিজম এখন ছবি (ViT), অডিও, কোড, এমনকি প্রোটিন স্ট্রাকচারও পড়ে। তুমি এই মুহূর্তে এরই বংশধর ব্যবহার করছ।' }
   ],
 
-  /* ---------- toy 2D embedding map (hand-set semantic clusters) ---------- */
+  /* ---------- toy semantic map (2-D coords + z for the 3-D scene) ----------
+     cluster feeds both the colours and the semantic embedding table */
   scatter: [
-    {w:'cat',   bn:'বিড়াল',  x:-0.62, y: 0.50},
-    {w:'dog',   bn:'কুকুর',   x:-0.50, y: 0.66},
-    {w:'lion',  bn:'সিংহ',    x:-0.74, y: 0.38},
-    {w:'fish',  bn:'মাছ',     x:-0.38, y: 0.34},
-    {w:'king',  bn:'রাজা',    x: 0.58, y: 0.56},
-    {w:'queen', bn:'রানী',    x: 0.72, y: 0.68},
-    {w:'prince',bn:'রাজকুমার',x: 0.52, y: 0.74},
-    {w:'man',   bn:'পুরুষ',   x: 0.44, y: 0.30},
-    {w:'woman', bn:'নারী',    x: 0.58, y: 0.40},
-    {w:'apple', bn:'আপেল',    x:-0.30, y:-0.58},
-    {w:'banana',bn:'কলা',     x:-0.14, y:-0.70},
-    {w:'mango', bn:'আম',      x:-0.44, y:-0.50},
-    {w:'run',   bn:'দৌড়ানো', x: 0.10, y: 0.06},
-    {w:'walk',  bn:'হাঁটা',   x: 0.02, y: 0.14},
-    {w:'jump',  bn:'লাফ',     x: 0.24, y:-0.02},
-    {w:'eat',   bn:'খাওয়া',   x: 0.04, y:-0.10},
-    {w:'red',   bn:'লাল',     x: 0.78, y:-0.42},
-    {w:'blue',  bn:'নীল',     x: 0.88, y:-0.30},
-    {w:'green', bn:'সবুজ',    x: 0.66, y:-0.26}
+    {w:'cat',   bn:'বিড়াল',  x:-0.62, y: 0.50, z: 0.34, cluster:'animal'},
+    {w:'dog',   bn:'কুকুর',   x:-0.50, y: 0.66, z: 0.28, cluster:'animal'},
+    {w:'lion',  bn:'সিংহ',    x:-0.74, y: 0.38, z: 0.42, cluster:'animal'},
+    {w:'fish',  bn:'মাছ',     x:-0.38, y: 0.34, z: 0.22, cluster:'animal'},
+    {w:'king',  bn:'রাজা',    x: 0.58, y: 0.56, z: 0.55, cluster:'royal'},
+    {w:'queen', bn:'রানী',    x: 0.72, y: 0.68, z: 0.62, cluster:'royal'},
+    {w:'prince',bn:'রাজকুমার',x: 0.52, y: 0.74, z: 0.58, cluster:'royal'},
+    {w:'man',   bn:'পুরুষ',   x: 0.44, y: 0.30, z: 0.47, cluster:'royal'},
+    {w:'woman', bn:'নারী',    x: 0.58, y: 0.40, z: 0.52, cluster:'royal'},
+    {w:'apple', bn:'আপেল',    x:-0.30, y:-0.58, z:-0.30, cluster:'food'},
+    {w:'banana',bn:'কলা',     x:-0.14, y:-0.70, z:-0.38, cluster:'food'},
+    {w:'mango', bn:'আম',      x:-0.44, y:-0.50, z:-0.24, cluster:'food'},
+    {w:'run',   bn:'দৌড়ানো', x: 0.10, y: 0.06, z: 0.10, cluster:'action'},
+    {w:'walk',  bn:'হাঁটা',   x: 0.02, y: 0.14, z: 0.16, cluster:'action'},
+    {w:'jump',  bn:'লাফ',     x: 0.24, y:-0.02, z: 0.06, cluster:'action'},
+    {w:'eat',   bn:'খাওয়া',   x: 0.04, y:-0.10, z: 0.14, cluster:'action'},
+    {w:'red',   bn:'লাল',     x: 0.78, y:-0.42, z: 0.38, cluster:'colour'},
+    {w:'blue',  bn:'নীল',     x: 0.88, y:-0.30, z: 0.44, cluster:'colour'},
+    {w:'green', bn:'সবুজ',    x: 0.66, y:-0.26, z: 0.32, cluster:'colour'}
   ],
+  clusterColors: {animal:'#3fe0ff', royal:'#ffcf6e', food:'#5ef2b8',
+                  action:'#8f7bff', colour:'#ff6ec7'},
+
+  /* ---------- BPE lab ---------- */
+  bpe: {
+    corpus: 'low low low low low lower lower newest newest newest newest newest newest newest widest widest widest widest',
+    demos: ['lowest', 'newest', 'newer', 'glow', 'slowest', 'wider']
+  },
+
+  /* ---------- special tokens ---------- */
+  specialTokens: [
+    {t:'[PAD]', den:'Pads shorter sequences so every batch row has equal length. Attention ignores these positions.',
+      dbn:'ছোট সিকোয়েন্সকে সমান লম্বা করতে বসানো ফাঁকা টোকেন। attention এদের ওপর তাকায় না।'},
+    {t:'[UNK]', den:'"Unknown" — the fallback for words outside the vocabulary in word-level tokenizers. Byte-level BPE never needs it!',
+      dbn:'"অজানা" — ভোকাবুলারির বাইরের শব্দের ফলব্যাক (word-level টোকেনাইজারে)। Byte-level BPE-তে এটা লাগেই না!'},
+    {t:'[CLS]', den:'"Classification" token BERT puts at position 0; its final vector summarizes the whole sentence.',
+      dbn:'BERT যে টোকেনটা পজিশন ০-এ বসায়; এর শেষ ভেক্টরটাই পুরো বাক্যের সারসংক্ষেপ হয়ে ওঠে।'},
+    {t:'[SEP]', den:'Separator between two sentences — question and passage, or premise and hypothesis.',
+      dbn:'দুই বাক্যের মাঝের বিভাজক — প্রশ্ন-উত্তর, বা দুই বাক্য মেলানোর কাজে।'},
+    {t:'[MASK]', den:'BERT hides ~15% of tokens behind this, then the model guesses them — like a smart fill-in-the-blank exam.',
+      dbn:'BERT প্রায় ১৫% টোকেন এর আড়ালে লুকিয়ে মডেলকে অনুমান করায় — চটিয়া-ভরার পরীক্ষার মতো।'},
+    {t:'<s>', den:'GPT-style start-of-sequence marker (BOS) — generation always begins after it.',
+      dbn:'GPT-জাতীয় মডেলে সিকোয়েন্স-শুরুর চিহ্ন (BOS) — জেনারেশন শুরু হয় এর পরে।'},
+    {t:'</s>', den:'End-of-sequence marker (EOS). When the model outputs it, generation stops.',
+      dbn:'সিকোয়েন্স-শেষের চিহ্ন (EOS)। মডেল এটা আউটপুট দিলেই জেনারেশন থেমে যায়।'}
+  ],
+
+  /* ---------- one-hot × E demo ---------- */
+  onehotWords: ['cat', 'king', 'apple', 'run', 'red', 'fish'],
+
+  /* ---------- cosine similarity presets ---------- */
+  cosPresets: [['cat','dog'], ['cat','banana'], ['king','queen'],
+               ['run','walk'], ['red','blue'], ['king','banana']],
 
   /* ---------- next-word demo ---------- */
   nextword: {

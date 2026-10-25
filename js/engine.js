@@ -75,9 +75,86 @@ const Engine = (() => {
   }
   const tokId = t => (hashStr('tok::' + t) % 49608) + 100;
 
-  /* ---------- embeddings (deterministic toy vectors) ---------- */
+  /* ---------- embeddings (deterministic toy vectors) ----------
+     Demo words get SEMANTIC vectors so cosine similarity and the
+     king−man+woman trick carry real meaning:
+       dim 0,1 = 2-D meaning-map coordinates (mirror DATA.scatter)
+       dim 2   = animal-ness     dim 3 = royalty / person
+       dim 4   = food-ness       dim 5 = action-ness
+       dim 6   = colour-ness     dim 7 = gender (king +, queen −) */
   const DIM = 8;
-  const embedToken = (t, d = DIM) => randVec(hashStr('emb::' + t), d);
+  const CLUSTER_DIMS = {animal:[1,0,0,0,0], royal:[0,1,0,0,0], food:[0,0,1,0,0],
+                        action:[0,0,0,1,0], colour:[0,0,0,0,1]};
+  const GENDER = {king:0.9, man:0.9, prince:0.5, queen:-0.9, woman:-0.9};
+  function semVec(w){
+    const p = (typeof DATA !== 'undefined') &&
+              DATA.scatter ? DATA.scatter.find(s => s.w === w) : null;
+    if (!p || !CLUSTER_DIMS[p.cluster]) return null;
+    const r = mulberry32(hashStr('semmeta::' + w));
+    const jit = () => r() * 0.08 - 0.04;
+    return [p.x, p.y,
+      ...CLUSTER_DIMS[p.cluster].map(v => +(v + jit()).toFixed(3)),
+      +((GENDER[w] || 0) + jit()).toFixed(3)];
+  }
+  const embedToken = (t, d = DIM) =>
+    (d === DIM && semVec(t)) ? semVec(t) : randVec(hashStr('emb::' + t), d);
+
+  /* ---------- vector math extras ---------- */
+  const norm = v => Math.sqrt(dot(v, v));
+  const cosSim = (a, b) => dot(a, b) / (norm(a) * norm(b) || 1);
+
+  /* ---------- UTF-8 byte anatomy (why Bangla "costs" more tokens) ---------- */
+  const bytesOf = t => Array.from(new TextEncoder().encode(t));
+  const byteHex = b => b.toString(16).toUpperCase().padStart(2, '0');
+
+  /* ---------- BPE trainer (educational, runs on a tiny corpus) ---------- */
+  function bpeTrain(corpusStr, steps){
+    const words = corpusStr.trim().split(/\s+/).map(w => w.toLowerCase().split(''));
+    const vocab = new Set(words.flat());
+    const merges = [], hist = [];
+    for (let s = 0; s < steps; s++){
+      const counts = {}, first = {};
+      words.forEach((w, wi) => {
+        for (let i = 0; i < w.length - 1; i++){
+          const p = w[i] + '\u0001' + w[i+1];
+          counts[p] = (counts[p] || 0) + 1;
+          if (!(p in first)) first[p] = wi * 1000 + i;
+        }
+      });
+      const order = Object.keys(counts).sort((a, b) =>
+        counts[b] - counts[a] || first[a] - first[b] || (a < b ? -1 : 1));
+      if (!order.length) break;
+      const best = order[0], parts = best.split('\u0001');
+      const a = parts[0], b = parts[1], merged = a + b;
+      merges.push([a, b]);
+      vocab.add(merged);
+      for (let wi = 0; wi < words.length; wi++){
+        const w = words[wi], out = [];
+        for (let i = 0; i < w.length; i++){
+          if (i < w.length - 1 && w[i] === a && w[i+1] === b){ out.push(merged); i++; }
+          else out.push(w[i]);
+        }
+        words[wi] = out;
+      }
+      hist.push({n: s + 1, a, b, merged, count: counts[best],
+        top: order.slice(0, 5).map(p => [p.split('\u0001'), counts[p]]),
+        vocab: [...vocab], words: words.map(w => w.slice())});
+    }
+    return {corpus: corpusStr.trim().split(/\s+/), merges, hist,
+            initVocab: [...vocab]};
+  }
+  function bpeApply(word, merges){
+    let w = word.toLowerCase().split('');
+    for (const [a, b] of merges){
+      const out = [];
+      for (let i = 0; i < w.length; i++){
+        if (i < w.length - 1 && w[i] === a && w[i+1] === b){ out.push(a + b); i++; }
+        else out.push(w[i]);
+      }
+      w = out;
+    }
+    return w;
+  }
 
   /* positional encoding — the real formula */
   const PE = (pos, i, d = 32) =>
@@ -114,5 +191,6 @@ const Engine = (() => {
 
   return {hashStr, mulberry32, randVec, randMat, dot, matVec, transpose,
           vadd, zeros, softmaxRaw, tokenize, tokId, embedToken, PE,
-          compute, fromRules, maskRows, attentionWithRules, DIM};
+          compute, fromRules, maskRows, attentionWithRules, DIM,
+          norm, cosSim, bytesOf, byteHex, bpeTrain, bpeApply};
 })();

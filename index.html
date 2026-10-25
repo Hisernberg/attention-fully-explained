@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Attention, Fully Explained — টোকেন থেকে আউটপুট | Bangla + English</title>
-<meta name="description" content="Interactive bilingual (Bangla + English) explainer of the attention mechanism: tokenization to output, with 16+ 2D/3D visualizations, history of RNN/LSTM, math deep-dive, and curated videos.">
+<meta name="description" content="Interactive bilingual (Bangla + English) explainer of the attention mechanism: tokenization to output, with 25+ 2D/3D visualizations — BPE merge lab, byte anatomy, semantic embeddings, cosine calculator, 3D transformers — RNN/LSTM history, math deep-dive, curated videos.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1628'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%233fe0ff' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%238f7bff'/%3E%3Cpath d='M16 3v6M16 23v6M3 16h6M23 16h6' stroke='%23ff6ec7' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,9 +53,9 @@
        data-bn="RNN আর LSTM ভাষা বুঝতে চেয়েছিল এক শব্দ এক শব্দ করে। Attention সবকিছু বদলে দিল — আর এই পেজে তুমি সেটাকে অনুভব করবে: ৩-ডিতে ঘুরিয়ে দেখো, গণিতের স্লাইড নাড়াও, দেখো 'সে' শব্দটা নিজে থেকে 'ইঁদুর'-কে খুঁজে পায়। সবকিছু বাংলা ও ইংরেজিতে, সবকিছু ব্রাউজারে, কিছু ইনস্টল করতে হবে না।">
       RNN আর LSTM ভাষা বুঝতে চেয়েছিল এক শব্দ এক শব্দ করে। Attention সবকিছু বদলে দিল — আর এই পেজে তুমি সেটাকে অনুভব করবে: ৩-ডিতে ঘুরিয়ে দেখো, গণিতের স্লাইড নাড়াও, দেখো 'সে' শব্দটা নিজে থেকে 'ইঁদুর'-কে খুঁজে পায়। সবকিছু বাংলা ও ইংরেজিতে, সবকিছু ব্রাউজারে, কিছু ইনস্টল করতে হবে না।</p>
     <div class="stat-row">
-      <div class="stat"><b>16+</b><span data-en="visualizations" data-bn="ভিজ্যুয়ালাইজেশন">ভিজ্যুয়ালাইজেশন</span></div>
+      <div class="stat"><b>25+</b><span data-en="visualizations" data-bn="ভিজ্যুয়ালাইজেশন">ভিজ্যুয়ালাইজেশন</span></div>
       <div class="stat"><b>2</b><span data-en="languages" data-bn="ভাষা">ভাষা</span></div>
-      <div class="stat"><b>3D</b><span data-en="architecture &amp; attention" data-bn="আর্কিটেকচার ও অ্যাটেনশন">আর্কিটেকচার ও অ্যাটেনশন</span></div>
+      <div class="stat"><b>5×3-D</b><span data-en="explorer scenes" data-bn="এক্সপ্লোরার সিন">এক্সপ্লোরার সিন</span></div>
       <div class="stat"><b>0</b><span data-en="setup needed" data-bn="সেটআপ লাগবে না">সেটআপ লাগবে না</span></div>
     </div>
     <div class="cta-row">
@@ -110,6 +110,75 @@
         Three options: characters (too tiny — wasteful context), words (too many — 'run', 'running', 'ran' would each need separate slots and new words would never fit), or subwords (just right). Byte Pair Encoding starts from characters and repeatedly merges the most frequent adjacent pair — 'e'+'r' → 'er', 'th'+'e' → 'the' — until the vocabulary reaches the target size (GPT-2: 50,257). Common words stay whole; rare words decompose into meaningful pieces. Bangla works the same way in multilingual tokenizers, though with less training data the cuts are usually finer. Try tiktokenizer.vercel.app to see real cuts live.</div>
     </details>
   </div>
+
+  <!-- BPE MERGE LAB -->
+  <div class="card">
+    <h3 data-en="BPE merge lab — watch a tokenizer LEARN its cuts" data-bn="BPE মার্জ ল্যাব — টোকেনাইজারের কাটাশেখা চোখের সামনে">BPE মার্জ ল্যাব — টোকেনাইজারের কাটাশেখা চোখের সামনে</h3>
+    <p class="note" data-en="The actual Byte Pair Encoding algorithm, live on a 19-word corpus. Each step counts every adjacent pair and merges the most frequent one into a new vocabulary piece — exactly how GPT built 50,257 pieces, just with a bigger corpus."
+       data-bn="আসল Byte Pair Encoding অ্যালগরিদম, ১৯ শব্দের কর্পাসে লাইভ। প্রতি ধাপে পাশাপাশি সব জোড়ার হিসাব হয়, সবচেয়ে ঘন ঘন জোড়াটা মিলে ভোকাবুলারির নতুন টুকরো হয় — GPT ৫০,২৫৭টা টুকরো বানিয়েছিল ঠিক এইভাবেই, শুধু বড় কর্পাসে।">The actual Byte Pair Encoding algorithm, live on a 19-word corpus. Each step counts every adjacent pair and merges the most frequent one into a new vocabulary piece — exactly how GPT built 50,257 pieces, just with a bigger corpus.</p>
+    <div class="controls">
+      <button class="btn primary" id="bpePlayBtn" data-en="▶ Auto-play merges" data-bn="▶ অটো-প্লে মার্জ">▶ অটো-প্লে মার্জ</button>
+      <span class="note" id="bpeNow"></span>
+    </div>
+    <div class="steps" id="bpeStepChips"></div>
+    <div class="subh" data-en="Corpus (19 words) — pieces joined by ·" data-bn="কর্পাস (১৯টা শব্দ) — টুকরোগুলো · দিয়ে জোড়া">কর্পাস (১৯টা শব্দ) — টুকরোগুলো · দিয়ে জোড়া</div>
+    <div class="chiprow" id="bpeCorpus"></div>
+    <div class="grid2" style="margin-top:14px">
+      <div>
+        <div class="subh" data-en="Most frequent adjacent pairs right now" data-bn="এই মুহূর্তে সবচেয়ে ঘন ঘন পাশাপাশি জোড়া">এই মুহূর্তে সবচেয়ে ঘন ঘন পাশাপাশি জোড়া</div>
+        <div id="bpePairs"></div>
+      </div>
+      <div>
+        <div class="subh" data-en="Vocabulary so far (gold = fresh merge)" data-bn="এখন পর্যন্ত ভোকাবুলারি (সোনালি = নতুন মার্জ)">এখন পর্যন্ত ভোকাবুলারি (সোনালি = নতুন মার্জ)</div>
+        <div class="chiprow" id="bpeVocab"></div>
+      </div>
+    </div>
+    <details class="deep">
+      <summary data-en="Try it: apply these merges to any word" data-bn="নিজে করো: যেকোনো শব্দে এই মার্জগুলো প্রয়োগ করো">নিজে করো: যেকোনো শব্দে এই মার্জগুলো প্রয়োগ করো</summary>
+      <div class="inner">
+        <div class="controls">
+          <input type="text" id="bpeWordInput" value="lowest" spellcheck="false" style="max-width:200px">
+          <button class="btn" id="bpeApplyBtn" data-en="Tokenize with BPE" data-bn="BPE দিয়ে টোকেনাইজ">BPE দিয়ে টোকেনাইজ</button>
+        </div>
+        <div class="chips" id="bpeOut"></div>
+        <p class="note" data-en="Type &quot;lowest&quot; → low + est. Type &quot;glow&quot; → g + low — the model reuses 'low' even inside 'glow'. That recycling is the whole point of subwords."
+           data-bn="&quot;lowest&quot; লেখো → low + est। &quot;glow&quot; লেখো → g + low — 'glow'-এর ভেতরেও 'low' পুনর্ব্যবহৃত হলো। সাবওয়ার্ডের পুরো পয়েন্টই এই পুনর্ব্যবহার।">Type "lowest" → low + est. Type "glow" → g + low — the model reuses 'low' even inside 'glow'. That recycling is the whole point of subwords.</p>
+      </div>
+    </details>
+  </div>
+
+  <!-- BYTE ANATOMY -->
+  <div class="card">
+    <h3 data-en="Byte anatomy — what the model actually sees first" data-bn="বাইট-অ্যানাটমি — মডেল আসলে প্রথমে কী দেখে">বাইট-অ্যানাটমি — মডেল আসলে প্রথমে কী দেখে</h3>
+    <p class="note" data-en="Modern tokenizers (GPT-2, GPT-4o, LLaMA) start from UTF-8 BYTES, not letters. An English letter is 1 byte; a Bangla letter is 3. That is why rare Bangla text costs 2–4× more tokens — more bytes, more pieces, more context window spent. Click any letter."
+       data-bn="আধুনিক টোকেনাইজার (GPT-2, GPT-4o, LLaMA) অক্ষর নয়, UTF-8 বাইট থেকে শুরু করে। ইংরেজি অক্ষর ১ বাইট; বাংলা অক্ষর ৩। তাই বিরল বাংলা টেক্সটের খরচ ২–৪ গুণ — বেশি বাইট, বেশি টুকরো, কনটেক্সট উইন্ডোর বেশি অংশ। যেকোনো অক্ষরে ক্লিক করো।">Modern tokenizers (GPT-2, GPT-4o, LLaMA) start from UTF-8 BYTES, not letters. An English letter is 1 byte; a Bangla letter is 3. That is why rare Bangla text costs 2–4× more tokens — more bytes, more pieces, more context window spent. Click any letter.</p>
+    <div class="controls">
+      <input type="text" id="byteInput" value="বিড়ালটি মাদুরে বসেছিল" spellcheck="false">
+      <button class="btn sm" id="byteDemoEn" data-en="Try English" data-bn="ইংরেজি দেখাও">ইংরেজি দেখাও</button>
+      <button class="btn sm" id="byteDemoBn" data-en="Try Bangla" data-bn="বাংলা দেখাও">বাংলা দেখাও</button>
+    </div>
+    <div class="byteRow" id="byteRow"></div>
+    <div class="controls" id="byteStats" style="margin-top:12px"></div>
+    <div class="mathbox" id="byteDetail"></div>
+    <p class="note" data-en="Byte-level BPE can encode ANY text — emoji, Bangla, code — with zero [UNK]. The merges then learn which byte groups are frequent in YOUR language."
+       data-bn="Byte-level BPE যেকোনো টেক্সট এনকোড করতে পারে — ইমোজি, বাংলা, কোড — কোনো [UNK] ছাড়াই। মার্জগুলো তারপর শেখে তোমার ভাষায় কোন বাইট-গুচ্ছ বেশি ঘন ঘন আসে।">Byte-level BPE can encode ANY text — emoji, Bangla, code — with zero [UNK]. The merges then learn which byte groups are frequent in YOUR language.</p>
+  </div>
+
+  <!-- SPECIAL TOKENS -->
+  <div class="card">
+    <h3 data-en="Special tokens — the punctuation of model-speak" data-bn="স্পেশাল টোকেন — মডেল-ভাষার যতিচিহ্ন">স্পেশাল টোকেন — মডেল-ভাষার যতিচিহ্ন</h3>
+    <p class="note" data-en="Besides learned pieces, every tokenizer ships with reserved control tokens. They are not words — they are signals: where a sentence starts, where it ends, what is blank padding, what is hidden for guessing."
+       data-bn="শেখা টুকরোগুলোর বাইরে প্রতিটা টোকেনাইজারে কিছু সরিয়ে রাখা কন্ট্রোল-টোকেন থাকে। ওরা শব্দ না — ওরা সংকেত: বাক্য কোথায় শুরু, কোথায় শেষ, কোনটা ফাঁকা প্যাডিং, কোনটা অনুমানের জন্য লুকানো।">Besides learned pieces, every tokenizer ships with reserved control tokens. They are not words — they are signals: where a sentence starts, where it ends, what is blank padding, what is hidden for guessing.</p>
+    <div class="spec-grid" id="specGrid"></div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div class="card">
+    <h3 data-en="Same text, three tokenizers — count the cost" data-bn="একই টেক্সট, তিন টোকেনাইজার — খরচ গুনে দেখো">একই টেক্সট, তিন টোকেনাইজার — খরচ গুনে দেখো</h3>
+    <div style="margin-top:10px" id="cmpBody"></div>
+    <p class="note" data-en="Word-level: fewest tokens but chokes on new words. Character-level: never fails but wastes context. Subword: the trade-off that won. Watch the numbers change as you edit the text box above — Bangla words with suffixes split much more."
+       data-bn="Word-level: টোকেন সবচেয়ে কম, কিন্তু নতুন শব্দে আটকে যায়। অক্ষর-ভিত্তিক: কখনো আটকায় না, কিন্তু কনটেক্সট নষ্ট। সাবওয়ার্ড: যে সমঝোতা জিতেছে। ওপরের টেক্সট-বক্সে লিখলেই সংখ্যা বদলাবে — বিভক্তিওয়ালা বাংলা শব্দ অনেক বেশি ভাঙে।">Word-level: fewest tokens but chokes on new words. Character-level: never fails but wastes context. Subword: the trade-off that won. Watch the numbers change as you edit the text box above — Bangla words with suffixes split much more.</p>
+  </div>
 </section>
 
 <!-- ================= EMBED ================= -->
@@ -136,6 +205,52 @@
   <div class="controls">
     <button class="btn" id="embMagicBtn">king − man + woman = ?</button>
     <span class="note" id="embMagicNote"></span>
+  </div>
+
+  <!-- EMBEDDING INSPECTOR: vector table / one-hot / cosine -->
+  <div class="grid3">
+    <div class="card">
+      <h3 data-en="The vector, number by number" data-bn="ভেক্টরটা, সংখ্যা ধরে ধরে">ভেক্টরটা, সংখ্যা ধরে ধরে</h3>
+      <div id="vecTable"></div>
+    </div>
+    <div class="card">
+      <h3 data-en="One-hot × E — the real lookup" data-bn="One-hot × E — আসল lookup-টা">One-hot × E — আসল lookup-টা</h3>
+      <p class="note" data-en="An embedding table E has one row per token. Multiplying a one-hot vector by E selects exactly one row — that IS the embedding."
+           data-bn="এমবেডিং টেবিল E-তে প্রতি টোকেনের একটা করে সারি। one-hot ভেক্টর দিয়ে E-কে গুণ করলে ঠিক একটা সারি বেছে আসে — এটাই এমবেডিং।">An embedding table E has one row per token. Multiplying a one-hot vector by E selects exactly one row — that IS the embedding.</p>
+      <div class="controls">
+        <select id="ohWordSel"></select>
+        <button class="btn sm" id="ohGo" data-en="Multiply → pick row" data-bn="গুণ করো → সারি বাছাই দেখাও">গুণ করো → সারি বাছাই দেখাও</button>
+      </div>
+      <div class="subh" data-en="one-hot (1 at the chosen token)" data-bn="one-hot (বাছাই টোকেনে ১)">one-hot (বাছাই টোকেনে ১)</div>
+      <div class="ohstrip" id="ohOneHot"></div>
+      <div class="subh" data-en="E (6 tokens × 8 dims) — selected row lights up" data-bn="E (৬ টোকেন × ৮ ডাইম) — বাছাই সারি জ্বলে ওঠে">E (৬ টোকেন × ৮ ডাইম) — বাছাই সারি জ্বলে ওঠে</div>
+      <div class="ohgrid" id="ohGrid"></div>
+      <div class="subh" data-en="result = that row = the embedding" data-bn="ফল = সেই সারি = এমবেডিং">ফল = সেই সারি = এমবেডিং</div>
+      <div class="ohstrip" id="ohResult"></div>
+    </div>
+    <div class="card">
+      <h3 data-en="Cosine similarity — live arithmetic" data-bn="Cosine similarity — লাইভ হিসাব">Cosine similarity — লাইভ হিসাব</h3>
+      <div class="controls">
+        <select id="cosA"></select>
+        <select id="cosB"></select>
+      </div>
+      <div class="controls" id="cosPresets"></div>
+      <div id="cosSteps"></div>
+      <canvas class="viz" id="cosCanvas" height="170"></canvas>
+    </div>
+  </div>
+
+  <!-- 3-D EMBEDDING SPACE -->
+  <div class="viz-frame" style="margin-top:22px">
+    <div class="three-wrap" id="threeEmb" style="height:480px">
+      <div class="three-hint" data-en="drag to rotate · scroll to zoom" data-bn="ঘোরাতে ড্র্যাগ · জুমে স্ক্রল">ঘোরাতে ড্র্যাগ · জুমে স্ক্রল</div>
+    </div>
+    <div class="controls" style="justify-content:center">
+      <button class="btn primary" id="embAnalogyBtn" data-en="▶ Play king − man + woman" data-bn="▶ চালাও king − man + woman">▶ চালাও king − man + woman</button>
+      <label class="rng"><input type="checkbox" id="emb3dRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
+      <span class="note" id="embAnalogyNote"></span>
+    </div>
+    <div class="legend" id="emb3dLegend"></div>
   </div>
   <details class="deep">
     <summary data-en="Deep dive: how do we compare two vectors?" data-bn="গভীরে: দুই ভেক্টর তুলনা করা হয় কীভাবে?">গভীরে: দুই ভেক্টর তুলনা করা হয় কীভাবে?</summary>
@@ -171,6 +286,17 @@
       <input type="range" id="pePos" min="0" max="47" value="0" step="1" style="width:220px"></label>
     <span class="note" id="peRead"></span>
   </div>
+  <div class="viz-frame">
+    <h3 style="margin:2px 0 8px" data-en="The wave-landscape in 3-D" data-bn="তরঙ্গ-ল্যান্ডস্কেপ, ৩-ডিতে">তরঙ্গ-ল্যান্ডস্কেপ, ৩-ডিতে</h3>
+    <p class="note" data-en="Left→right = position 0…47, front→back = dimension 0…31, height = value (−1…+1). The glowing slice follows your slider — every position cuts a unique fingerprint out of this landscape."
+         data-bn="বাঁয়ে→ডানে = পজিশন ০…৪৭, সামনে→পেছনে = ডাইমেনশন ০…৩১, উচ্চতা = মান (−১…+১)। উজ্জ্বল স্লাইসটা স্লাইডার অনুসরণ করে — প্রতিটা পজিশন এই ল্যান্ডস্কেপ থেকে নিজের ইউনিক ফিঙ্গারপ্রিন্ট কেটে নেয়।">Left→right = position 0…47, front→back = dimension 0…31, height = value (−1…+1). The glowing slice follows your slider — every position cuts a unique fingerprint out of this landscape.</p>
+    <div class="three-wrap" id="threePE" style="height:440px;margin-top:10px">
+      <div class="three-hint" data-en="drag to rotate · scroll to zoom" data-bn="ঘোরাতে ড্র্যাগ · জুমে স্ক্রল">ঘোরাতে ড্র্যাগ · জুমে স্ক্রল</div>
+    </div>
+    <div class="controls" style="justify-content:center">
+      <label class="rng"><input type="checkbox" id="pe3dRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
+    </div>
+  </div>
   <details class="deep">
     <summary data-en="Deep dive: why waves instead of 1,2,3…?" data-bn="গভীরে: ১,২,৩… না দিয়ে তরঙ্গ কেন?">গভীরে: ১,২,৩… না দিয়ে তরঙ্গ কেন?</summary>
     <div class="inner" data-en="Raw integers blow up (position 5000 ≫ any embedding value) and tell the model nothing about relative distance. Waves stay bounded in [−1, 1], and any shift by k positions is a fixed rotation of the wave pair — so '5 steps away' looks similar everywhere in the sentence. Modern models often learn positions or rotate queries/keys (RoPE in LLaMA) — same goal, newer math."
@@ -195,6 +321,19 @@
       <p class="role" data-en="K = X·W_K. The word 'mouse' grows a key like: &quot;singular animal noun, recently mentioned&quot; — advertising what it can answer for." data-bn="K = X·W_K। 'mouse'/'ইঁদুর' শব্দের কী হয়ে ওঠে এমন: &quot;একবচন প্রাণী-বিশেষ্য, সবেমাত্র উল্লেখ হয়েছে&quot; — সে কীসের উত্তর দিতে পারে তার বিজ্ঞাপন।">K = X·W_K। 'mouse'/'ইঁদুর' শব্দের কী হয়ে ওঠে এমন: "একবচন প্রাণী-বিশেষ্য, সবেমাত্র উল্লেখ হয়েছে" — সে কীসের উত্তর দিতে পারে তার বিজ্ঞাপন।</p></div>
     <div class="qc v"><div class="big">V</div><h3 data-en="Value — &quot;what will I give if matched?&quot;" data-bn="ভ্যালু — &quot;ম্যাচ পেলে কী দেব?&quot;">ভ্যালু — "ম্যাচ পেলে কী দেব?"</h3>
       <p class="role" data-en="V = X·W_V. If 'it' attends to 'mouse', the mouse's VALUE (its meaning-payload) flows into the 'it' vector. Information moves through V, never through scores." data-bn="V = X·W_V। 'it'/'সে' যদি 'mouse'/'ইঁদুর'-এর দিকে তাকায়, ইঁদুরের ভ্যালু (তার অর্থের পে-লোড) 'it'-এর ভেক্টরে ঢুকে যায়। তথ্য চলাচল করে V দিয়ে, কখনো স্কোর দিয়ে নয়।">V = X·W_V। 'it'/'সে' যদি 'mouse'/'ইঁদুর'-এর দিকে তাকায়, ইঁদুরের ভ্যালু (তার অর্থের পে-লোড) 'it'-এর ভেক্টরে ঢুকে যায়। তথ্য চলাচল করে V দিয়ে, কখনো স্কোর দিয়ে নয়।</p></div>
+  </div>
+  <!-- QKV INTERACTIVE -->
+  <div class="card">
+    <h3 data-en="Try it — one token, four real vectors" data-bn="নিজে দেখো — একটা টোকেন, চারটা আসল ভেক্টর">নিজে দেখো — একটা টোকেন, চারটা আসল ভেক্টর</h3>
+    <p class="note" data-en="Pick a token from the sentence. You see its input vector x, then the SAME vector in three costumes (q, k, v) after multiplying by three learned 8×8 matrices — the real numbers the score matrix is built from."
+         data-bn="বাক্য থেকে একটা টোকেন বাছো। দেখবে তার ইনপুট ভেক্টর x, তারপর সেই একই ভেক্টর তিন ছদ্মবেশে (q, k, v) — তিনটা শেখা ৮×৮ ম্যাট্রিক্স দিয়ে গুণ হওয়ার পরে। স্কোর ম্যাট্রিক্স এই আসল সংখ্যা থেকেই তৈরি।">Pick a token from the sentence. You see its input vector x, then the SAME vector in three costumes (q, k, v) after multiplying by three learned 8×8 matrices — the real numbers the score matrix is built from.</p>
+    <div class="controls">
+      <span data-en="token:" data-bn="টোকেন:">টোকেন:</span>
+      <select id="qkvTok"></select>
+      <span class="note mono">x → ×W_Q, ×W_K, ×W_V → (q, k, v)</span>
+    </div>
+    <canvas class="viz" id="qkvCanvas" height="240"></canvas>
+    <div class="chips" id="qkvScores" style="margin-top:12px"></div>
   </div>
   <details class="deep">
     <summary data-en="Deep dive: where do W_Q, W_K, W_V come from?" data-bn="গভীরে: W_Q, W_K, W_V আসে কোথা থেকে?">গভীরে: W_Q, W_K, W_V আসে কোথা থেকে?</summary>
@@ -456,6 +595,18 @@
         <label class="rng"><input type="checkbox" id="surfRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
       </div>
       <div class="legend" id="surfLegend"></div>
+    </div>
+  </div>
+  <div class="viz-frame" style="margin-top:22px">
+    <h3 style="margin:2px 0 8px" data-en="All four heads, stacked in 3-D" data-bn="চারটা হেডই, ৩-ডিতে স্তূপাকারে">চারটা হেডই, ৩-ডিতে স্তূপাকারে</h3>
+    <p class="note" data-en="Four floors, one attention head per floor. Every tower is one weight. Click any tower to sync the 2-D explorers above to that head; hover for the exact token pair."
+         data-bn="চার তলা, প্রতি তলায় একটা attention head। প্রতিটা টাওয়ারই একটা ওজন। যেকোনো টাওয়ারে ক্লিক করলে ওপরের ২-ডি এক্সপ্লোরারগুলো সেই হেডে সিঙ্ক হবে; হোভারে হুবহু জোড়া দেখা যায়।">Four floors, one attention head per floor. Every tower is one weight. Click any tower to sync the 2-D explorers above to that head; hover for the exact token pair.</p>
+    <div class="three-wrap" id="threeHeads" style="height:520px;margin-top:10px">
+      <div class="three-hint" id="heads3dHint" data-en="click a tower to select its head" data-bn="হেড বাছতে টাওয়ারে ক্লিক করো">হেড বাছতে টাওয়ারে ক্লিক করো</div>
+    </div>
+    <div class="controls" style="justify-content:center">
+      <label class="rng"><input type="checkbox" id="heads3dRotate" checked> <span data-en="auto-rotate" data-bn="অটো-রোটেট">অটো-রোটেট</span></label>
+      <span class="note" data-en="floor 1 = syntax · floor 2 = coreference · floor 3 = position sink · floor 4 = semantic" data-bn="তলা ১ = বাক্য-গঠন · তলা ২ = নির্দেশ-সম্পর্ক · তলা ৩ = অবস্থান · তলা ৪ = অর্থ">তলা ১ = বাক্য-গঠন · তলা ২ = নির্দেশ-সম্পর্ক · তলা ৩ = অবস্থান · তলা ৪ = অর্থ</span>
     </div>
   </div>
 </section>

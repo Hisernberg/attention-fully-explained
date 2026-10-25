@@ -11,7 +11,15 @@ const App = {
   pipePreset: 'en',
   pipeStep: 0,
   outPreset: 'en',
-  outTemp: 1
+  outTemp: 1,
+  /* deep-dive state */
+  bpeStep: 0,
+  byteText: 'বিড়ালটি মাদুরে বসেছিল',
+  byteSel: 0,
+  onehotWord: 'cat',
+  cosA: 'cat',
+  cosB: 'dog',
+  qkvTok: undefined
 };
 
 /* ---------- language ---------- */
@@ -69,6 +77,9 @@ function renderAll(){
   VIZ.R.timeline(l); VIZ.R.tokenize(l); VIZ.R.embWords(l); VIZ.R.embScatter(l);
   VIZ.R.pe(l); VIZ.R.scores(l); VIZ.R.arcs(l); VIZ.R.heads(l); VIZ.R.mask(l);
   VIZ.R.pipeline(l); VIZ.R.output(l); VIZ.R.mathEx(l);
+  /* deep-dive panels */
+  VIZ.R.tokLab(l); VIZ.R.tokBytes(l); VIZ.R.tokSpec(l); VIZ.R.tokCompare(l);
+  VIZ.R.embVecTable(l); VIZ.R.embOneHot(l); VIZ.R.cosCalc(l); VIZ.R.qkvPanel(l);
   renderGlossary(); renderVideos(); renderCredits();
   populateArcHead();
   VIZ3D.refreshLang();
@@ -115,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }), {threshold: 0.06});
   document.querySelectorAll('.sec').forEach(s => { s.classList.add('reveal'); rio.observe(s); });
 
-  /* lazy 3D */
+  /* lazy 3D — architecture + attention surface (in #d3) */
   const tio = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting){
       VIZ3D.initArch(document.getElementById('threeArch'),
@@ -127,6 +138,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }), {threshold: 0.15});
   tio.observe(document.getElementById('d3'));
+
+  /* lazy 3D — embedding space (in #embed) */
+  const eio = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){
+      VIZ3D.initEmb3d(document.getElementById('threeEmb'),
+        document.getElementById('embAnalogyNote'));
+      eio.disconnect();
+    }
+  }), {threshold: 0.15});
+  eio.observe(document.getElementById('threeEmb'));
+
+  /* lazy 3D — PE landscape (in #position) */
+  const pio = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){
+      VIZ3D.initPE3d(document.getElementById('threePE'));
+      VIZ3D.setPEPos(+document.getElementById('pePos').value);
+      pio.disconnect();
+    }
+  }), {threshold: 0.15});
+  pio.observe(document.getElementById('threePE'));
+
+  /* lazy 3D — heads tower (in #d3) */
+  const hio = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){
+      VIZ3D.initHeads3d(document.getElementById('threeHeads'),
+        document.getElementById('surfTip'));
+      hio.disconnect();
+    }
+  }), {threshold: 0.15});
+  hio.observe(document.getElementById('threeHeads'));
 
   /* language */
   document.getElementById('langBtn').onclick = () =>
@@ -161,8 +202,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* positional slider */
-  document.getElementById('pePos').addEventListener('input', () => VIZ.R.pe(App.lang));
+  /* positional slider — drives 2-D heatmap and 3-D slice together */
+  document.getElementById('pePos').addEventListener('input', () => {
+    VIZ.R.pe(App.lang);
+    VIZ3D.setPEPos(+document.getElementById('pePos').value);
+  });
+
+  /* tokenizer lab controls */
+  document.getElementById('bpePlayBtn').onclick = () => VIZ.R.tokLabPlay();
+  const byteInp = document.getElementById('byteInput');
+  byteInp.addEventListener('input', () => {
+    App.byteText = byteInp.value; App.byteSel = 0; VIZ.R.tokBytes(App.lang);
+  });
+  document.getElementById('byteDemoEn').onclick = () => {
+    byteInp.value = 'The cat sat on the mat!';
+    App.byteText = byteInp.value; App.byteSel = 0; VIZ.R.tokBytes(App.lang);
+  };
+  document.getElementById('byteDemoBn').onclick = () => {
+    byteInp.value = 'বিড়ালটি মাদুরে বসেছিল';
+    App.byteText = byteInp.value; App.byteSel = 0; VIZ.R.tokBytes(App.lang);
+  };
+  document.getElementById('tokInput').addEventListener('input', () => VIZ.R.tokCompare(App.lang));
+
+  /* embedding 3-D controls */
+  document.getElementById('embAnalogyBtn').onclick = () => VIZ3D.playEmbAnalogy();
+  document.getElementById('emb3dRotate').onchange = e => VIZ3D.setEmbRotate(e.target.checked);
+  document.getElementById('pe3dRotate').onchange = e => VIZ3D.setPE3dRotate(e.target.checked);
+  document.getElementById('heads3dRotate').onchange = e => VIZ3D.setHeads3dRotate(e.target.checked);
 
   /* attention preset + temperature */
   const attP = document.getElementById('attPreset');
@@ -181,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
     attP.value = v; arcP.value = v;
     populateArcHead();
     VIZ.R.scores(App.lang); VIZ.R.arcs(App.lang); VIZ.R.heads(App.lang);
+    VIZ.R.qkvPanel(App.lang);
     VIZ3D.setSurfHead(App.headIdx);
   };
   attP.onchange = () => syncPreset(attP.value);

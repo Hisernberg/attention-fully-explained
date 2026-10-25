@@ -14,31 +14,42 @@ short_description: Attention mechanism explained — Bangla + English
 **Live Space:** https://huggingface.co/spaces/Nabidnur/attention-fully-explained
 **Repo:** https://github.com/Hisernberg/attention-fully-explained
 
-An interactive, fully bilingual (**Bangla + English**) explainer of the **attention mechanism** — the idea behind every modern LLM — from **tokenization all the way to the sampled output**, with **16+ hands-on 2-D and 3-D visualizations**, a short history of RNN/LSTM/Seq2Seq, a story-vs-math deep dive, and curated top YouTube lessons. Everything computes locally in the browser; nothing to install, no data leaves your device.
+An interactive, fully bilingual (**Bangla + English**) explainer of the **attention mechanism** — the idea behind every modern LLM — from **tokenization all the way to the sampled output**, with **25+ hands-on 2-D and 3-D visualizations** (five of them full Three.js scenes), a short history of RNN/LSTM/Seq2Seq, a story-vs-math deep dive, and curated top YouTube lessons. Everything computes locally in the browser; nothing to install, no data leaves your device.
 
-## What's inside — 16+ visualizations
+## What's inside — 25+ visualizations
 
 | # | Visualization | What you learn |
 |---|---------------|----------------|
 | 1 | History timeline (1986 → 2020s) | Why RNN/LSTM/Seq2Seq led to attention |
 | 2 | Interactive tokenizer (EN + BN) | Tokens, subwords (##), IDs |
-| 3 | Embedding value strip | A token ID → vector of meaning |
-| 4 | 2-D semantic scatter map | Similar meanings cluster in space |
-| 5 | king − man + woman animation | Word-vector arithmetic |
-| 6 | Positional-encoding heatmap | sin/cos fingerprints per position |
-| 7 | PE wave curves + position slider | Fast vs slow "clocks" |
-| 8 | Q · K · V intuition cards | Library analogy, three projections |
-| 9 | Attention score matrix (EN/BN) | Rows=queries, cols=keys, click to select |
-| 10 | Softmax temperature playground | Watch weights sharpen/melt live |
-| 11 | BertViz-style arc diagram | See "it" attend to "mouse" ("সে"→"ইঁদুর") |
-| 12 | Multi-head grid (4 specialist heads) | Syntax, coreference, position, semantic |
-| 13 | Causal mask toggle | Future cells → −∞ → weight 0 |
-| 14 | 8-step full pipeline (real numbers) | Token → embed → +PE → QKV → scores → softmax(+mask) → A·V → next token |
-| 15 | Next-token sampler + histogram | Logits → softmax → sampling; convergence |
-| 16 | Story mode / Math mode toggle | Same idea at two altitudes |
-| 17 | Worked numeric example (3 tokens, d=4) | Every matrix computed live |
-| 18 | **3-D** transformer architecture explorer | Rotate/zoom/click blocks (Three.js) |
-| 19 | **3-D** attention-weight surface | The matrix as a tower landscape |
+| 3 | **BPE merge lab (auto-play)** | The real Byte Pair Encoding learning its cuts, step by step |
+| 4 | **Byte anatomy (UTF-8)** | Why Bangla letters cost 3 bytes and 2–4× more tokens |
+| 5 | **Special tokens cards** | [PAD]/[UNK]/[CLS]/[SEP]/[MASK]/BOS/EOS roles |
+| 6 | **Three-tokenizer comparison** | Word vs subword vs character token counts, live |
+| 7 | Embedding value strip | A token ID → vector of meaning |
+| 8 | **Vector table, dim by dim** | Every number + what each toy dim learned |
+| 9 | **One-hot × E lookup** | Where embedding rows really come from |
+| 10 | **Cosine similarity calculator** | Full worked dot product, norms, angle sketch |
+| 11 | 2-D semantic scatter map | Similar meanings cluster in space |
+| 12 | king − man + woman animation | Word-vector arithmetic (cos ≈ 0.996 with queen) |
+| 13 | **3-D embedding space** | Walk around meaning-space; animated 3-D analogy |
+| 14 | Positional-encoding heatmap | sin/cos fingerprints per position |
+| 15 | PE wave curves + position slider | Fast vs slow "clocks" |
+| 16 | **3-D PE wave landscape** | The whole fingerprint terrain + slider-driven slice |
+| 17 | Q · K · V intuition cards | Library analogy, three projections |
+| 18 | **Q/K/V token inspector** | One token → x, q, k, v bars + raw score row, real numbers |
+| 19 | Attention score matrix (EN/BN) | Rows=queries, cols=keys, click to select |
+| 20 | Softmax temperature playground | Watch weights sharpen/melt live |
+| 21 | BertViz-style arc diagram | See "it" attend to "mouse" ("সে"→"ইঁদুর") |
+| 22 | Multi-head grid (4 specialist heads) | Syntax, coreference, position, semantic |
+| 23 | **3-D multi-head tower** | Four head-floors; click a tower to sync every 2-D explorer |
+| 24 | Causal mask toggle | Future cells → −∞ → weight 0 |
+| 25 | 8-step full pipeline (real numbers) | Token → embed → +PE → QKV → scores → softmax(+mask) → A·V → next token |
+| 26 | Next-token sampler + histogram | Logits → softmax → sampling; convergence |
+| 27 | Story mode / Math mode toggle | Same idea at two altitudes |
+| 28 | Worked numeric example (3 tokens, d=4) | Every matrix computed live |
+| 29 | **3-D** transformer architecture explorer | Rotate/zoom/click blocks (Three.js) |
+| 30 | **3-D** attention-weight surface | The matrix as a tower landscape |
 
 Bonus: bilingual glossary (25 terms), curated video wall (3Blue1Brown, StatQuest, Karpathy, Umar Jamil), credits to the six landmark projects this was inspired by.
 

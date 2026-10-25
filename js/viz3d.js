@@ -236,6 +236,307 @@ const VIZ3D = (() => {
     window.addEventListener('resize', surf.resize);
   }
 
+  /* =========================================================
+     shared: render-loop that pauses offscreen
+     ========================================================= */
+  function autoLoop(container, tick){
+    let active = true;
+    const io = new IntersectionObserver(es =>
+      es.forEach(e => { active = e.isIntersecting; }), {threshold: 0.04});
+    io.observe(container);
+    (function loop(){
+      requestAnimationFrame(loop);
+      if (!active) return;
+      try { tick(); }
+      catch (err){
+        if (window.__attnDebug) window.__attnDebug.lastTickError = err;
+        throw err;
+      }
+    })();
+    if (window.__attnDebug) window.__attnDebug.loops.push({container, get active(){ return active; }});
+  }
+  function miniLabel(text, color = '#3fe0ff', size = 26){
+    const c = document.createElement('canvas');
+    const x = c.getContext('2d');
+    x.font = `600 ${size}px "Space Grotesk","Hind Siliguri",sans-serif`;
+    const w = Math.ceil(x.measureText(text).width) + 28;
+    c.width = w; c.height = size + 22;
+    x.fillStyle = 'rgba(5,11,22,0.82)';
+    x.beginPath();
+    if (x.roundRect) x.roundRect(1, 1, w - 2, size + 20, 10); else x.rect(1, 1, w - 2, size + 20);
+    x.fill();
+    x.strokeStyle = color; x.lineWidth = 2; x.stroke();
+    x.fillStyle = '#e3edff'; x.font = `600 ${size}px "Space Grotesk","Hind Siliguri",sans-serif`;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(text, w / 2, (size + 22) / 2 + 1);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(c), transparent: true, depthTest: false}));
+    sp.scale.set(w / 110, (size + 22) / 110, 1);
+    return sp;
+  }
+  function baseScene(container, camPos, target){
+    const W = container.clientWidth, H = container.clientHeight;
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x040a18, 0.028);
+    const cam = new THREE.PerspectiveCamera(46, W / H, 0.1, 100);
+    cam.position.set(...camPos);
+    const ren = new THREE.WebGLRenderer({antialias: true, alpha: true});
+    ren.setSize(W, H); ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(ren.domElement);
+    const ctrl = new THREE.OrbitControls(cam, ren.domElement);
+    ctrl.enableDamping = true; ctrl.autoRotateSpeed = 0.9;
+    ctrl.target.set(...target);
+    scene.add(new THREE.AmbientLight(0x8899ff, 0.95));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.85); dl.position.set(4, 9, 6); scene.add(dl);
+    return {scene, cam, ren, ctrl,
+      resize(){
+        const w = container.clientWidth, h = container.clientHeight;
+        if (!w || !h) return;
+        cam.aspect = w / h; cam.updateProjectionMatrix(); ren.setSize(w, h);
+      }};
+  }
+
+  /* =========================================================
+     SCENE 3 — embedding space in 3-D + king−man+woman
+     ========================================================= */
+  let emb = null;
+  function embPos(p){
+    return new THREE.Vector3(p.x * 3, (p.z + 0.45) * 2.6, -p.y * 3);
+  }
+  function initEmb3d(container, noteEl){
+    if (!window.THREE || emb) return;
+    const s = baseScene(container, [4.6, 2.6, 5.2], [0, 1.2, 0]);
+    s.ctrl.autoRotate = true;
+    s.scene.add(new THREE.GridHelper(9, 18, 0x1c3a66, 0x0e2244));
+    const pts = [];
+    DATA.scatter.forEach(p => {
+      const col = new THREE.Color(DATA.clusterColors[p.cluster]);
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 20),
+        new THREE.MeshStandardMaterial({color: col, emissive: col, emissiveIntensity: 0.55,
+          roughness: 0.35, transparent: true, opacity: 0.95}));
+      const P = embPos(p); m.position.copy(P);
+      m.userData = p;
+      s.scene.add(m); pts.push(m);
+      const lb = miniLabel(App.lang === 'bn' ? p.bn : p.w, '#' + col.getHexString(), 24);
+      lb.position.copy(P.clone().add(new THREE.Vector3(0, 0.34, 0)));
+      s.scene.add(lb);
+      /* drop line to floor */
+      const lg = new THREE.BufferGeometry().setFromPoints(
+        [P.clone(), new THREE.Vector3(P.x, 0.01, P.z)]);
+      s.scene.add(new THREE.Line(lg,
+        new THREE.LineBasicMaterial({color: col, transparent: true, opacity: 0.28})));
+    });
+    /* cluster legend */
+    document.getElementById('emb3dLegend').innerHTML =
+      Object.entries(DATA.clusterColors).map(([k, c]) => {
+        const nm = {animal: ['Animals', 'প্রাণী'], royal: ['Royalty / people', 'রাজপরিবার / মানুষ'],
+          food: ['Fruit', 'ফল'], action: ['Actions', 'কাজ'], colour: ['Colours', 'রং']}[k];
+        return `<span class="lg-item"><span class="lg-dot" style="background:${c}"></span>${App.lang === 'bn' ? nm[1] : nm[0]}</span>`;
+      }).join('');
+    /* analogy animation */
+    let anim = null;
+    const king = DATA.scatter.find(p => p.w === 'king'),
+          man = DATA.scatter.find(p => p.w === 'man'),
+          woman = DATA.scatter.find(p => p.w === 'woman'),
+          queen = DATA.scatter.find(p => p.w === 'queen');
+    const target = embPos(king).clone()
+      .sub(embPos(man)).add(embPos(woman));
+    const trailGeo = new THREE.BufferGeometry().setFromPoints([embPos(king), embPos(king)]);
+    const trail = new THREE.Line(trailGeo,
+      new THREE.LineBasicMaterial({color: 0xffcf6e, linewidth: 2}));
+    trail.visible = false; s.scene.add(trail);
+    const head3d = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16),
+      new THREE.MeshStandardMaterial({color: 0xffcf6e, emissive: 0xffcf6e, emissiveIntensity: 0.9}));
+    head3d.visible = false; s.scene.add(head3d);
+    function playAnalogy(){
+      anim = {t: 0};
+      trail.visible = true; head3d.visible = true;
+      noteEl.textContent = '';
+    }
+    emb = {...s, pts,
+      setRotate(v){ s.ctrl.autoRotate = v; },
+      playAnalogy, setLang(){
+        document.getElementById('emb3dLegend').innerHTML = '';
+        initEmb3d._legendDirty = true;
+      },
+      resize: s.resize};
+    autoLoop(container, () => {
+      s.ctrl.update();
+      if (anim){
+        anim.t += 0.008;
+        const t = Math.min(anim.t, 1);
+        const P = embPos(king).clone().lerp(target, t);
+        head3d.position.copy(P);
+        trailGeo.setFromPoints([embPos(king), P]);
+        if (t >= 1){
+          anim = null;
+          const lb = miniLabel('≈ ' + (App.lang === 'bn' ? 'রানী (queen)' : 'queen (রানী)'), '#5ef2b8', 26);
+          lb.position.copy(embPos(queen).clone().add(new THREE.Vector3(0, -0.55, 0)));
+          s.scene.add(lb);
+          noteEl.textContent = I18N[App.lang].analogyDone;
+        }
+      }
+      s.ren.render(s.scene, s.cam);
+    });
+    window.addEventListener('resize', () => emb && emb.resize());
+  }
+
+  /* =========================================================
+     SCENE 4 — positional-encoding wave landscape
+     ========================================================= */
+  let pe3 = null;
+  function initPE3d(container){
+    if (!window.THREE || pe3) return;
+    const s = baseScene(container, [2.6, 2.4, 3.6], [0, 0, 0]);
+    s.ctrl.autoRotate = true;
+    const N = 48, D = 32;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(N * D * 3);
+    const colors = new Float32Array(N * D * 3);
+    const idx = [];
+    const X = p => (p / (N - 1) - 0.5) * 4.6;
+    const Z = d => (d / (D - 1) - 0.5) * 3.0;
+    for (let d = 0; d < D; d++) for (let p = 0; p < N; p++){
+      const k = d * N + p;
+      const v = Engine.PE(p, d, D);
+      positions[k * 3] = X(p);
+      positions[k * 3 + 1] = v * 1.15;
+      positions[k * 3 + 2] = Z(d);
+      const c = new THREE.Color(VIZ.cmap((v + 1) / 2));
+      colors[k * 3] = c.r; colors[k * 3 + 1] = c.g; colors[k * 3 + 2] = c.b;
+      if (p < N - 1 && d < D - 1){
+        idx.push(k, k + 1, k + N, k + 1, k + N + 1, k + N);
+      }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.setIndex(idx);
+    s.scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      vertexColors: true, wireframe: true, transparent: true, opacity: 0.22})));
+    s.scene.add(new THREE.Points(geo, new THREE.PointsMaterial({
+      size: 0.035, vertexColors: true, transparent: true, opacity: 0.9})));
+    /* slider highlight slice */
+    const slice = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.5, 3.15),
+      new THREE.MeshBasicMaterial({color: 0x3fe0ff, transparent: true, opacity: 0.16}));
+    slice.position.set(X(0), 0, 0);
+    s.scene.add(slice);
+    const edge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(0.07, 2.5, 3.15)),
+      new THREE.LineBasicMaterial({color: 0x3fe0ff, transparent: true, opacity: 0.85}));
+    edge.position.copy(slice.position);
+    s.scene.add(edge);
+    pe3 = {...s, slice, edge, X,
+      setRotate(v){ s.ctrl.autoRotate = v; },
+      setPos(p){
+        const x = X(p);
+        slice.position.x = x; edge.position.x = x;
+      },
+      resize: s.resize};
+    autoLoop(container, () => {
+      s.ctrl.update();
+      const pulse = 0.14 + 0.05 * Math.sin(performance.now() / 400);
+      slice.material.opacity = pulse;
+      s.ren.render(s.scene, s.cam);
+    });
+    window.addEventListener('resize', () => pe3 && pe3.resize());
+  }
+
+  /* =========================================================
+     SCENE 5 — the four heads as a 3-D tower
+     ========================================================= */
+  let heads3 = null;
+  function initHeads3d(container, tipEl){
+    if (!window.THREE || heads3) return;
+    const s = baseScene(container, [3.4, 4.6, 5.0], [0, 2.6, 0]);
+    s.ctrl.autoRotate = true;
+    const p = DATA.presets.en;
+    const floors = [];
+    const n = p.tokens.length;
+    for (let k = 0; k < 4; k++){
+      const head = DATA.headRules.en[k];
+      const S = Engine.fromRules(p.tokens, head.fn);
+      const A = Engine.attentionWithRules(S, 1);
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.04, 4.3),
+        new THREE.MeshStandardMaterial({color: 0x0e2244, transparent: true, opacity: 0.55}));
+      g.add(base);
+      const bars = [];
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++){
+        const v = A[i][j];
+        const hgt = 0.04 + v * 1.5;
+        const col = new THREE.Color(VIZ.cmap(v));
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.34, hgt, 0.34),
+          new THREE.MeshStandardMaterial({color: col, transparent: true, opacity: 0.92,
+            emissive: col, emissiveIntensity: 0.2, roughness: 0.4}));
+        m.position.set((j - (n - 1) / 2) * 0.42, hgt / 2 + 0.02, (i - (n - 1) / 2) * 0.42);
+        m.userData = {i, j, v, k};
+        g.add(m); bars.push(m);
+      }
+      const name = DATA.headRules.en[k];
+      const lb = miniLabel(k + 1, '#93a7cc', 22);
+      lb.scale.multiplyScalar(0.8);
+      lb.position.set(-2.85, 0.25, 0);
+      g.add(lb);
+      const y = k * 1.95;
+      g.position.y = y;
+      s.scene.add(g);
+      floors.push({group: g, bars, k, base});
+    }
+    const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    let hovered = null;
+    ren2(s).addEventListener('pointermove', e => {
+      const r = ren2(s).getBoundingClientRect();
+      mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+      mouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+      ray.setFromCamera(mouse, s.cam);
+      const all = floors.flatMap(f => f.bars);
+      const hit = ray.intersectObjects(all)[0];
+      if (hit){
+        const {i, j, v, k} = hit.object.userData;
+        tipEl.style.display = 'block';
+        tipEl.style.left = (e.clientX + 14) + 'px';
+        tipEl.style.top = (e.clientY + 10) + 'px';
+        tipEl.innerHTML = `${I18N[App.lang].head} ${k + 1} · Q <b style="color:#3fe0ff">${esc2(p.tokens[i])}</b> → K <b style="color:#5ef2b8">${esc2(p.tokens[j])}</b> · <b class="mono">${v.toFixed(3)}</b>`;
+      } else tipEl.style.display = 'none';
+    });
+    ren2(s).addEventListener('pointerleave', () => { tipEl.style.display = 'none'; });
+    /* click a tower → select that head everywhere */
+    ren2(s).addEventListener('click', e => {
+      const r = ren2(s).getBoundingClientRect();
+      mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+      mouse.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+      ray.setFromCamera(mouse, s.cam);
+      const all = floors.flatMap(f => f.bars);
+      const hit = ray.intersectObjects(all)[0];
+      if (hit){
+        const k = hit.object.userData.k;
+        App.headIdx = k;
+        populateArcHead();
+        R.scores(App.lang); R.arcs(App.lang); R.heads(App.lang);
+        VIZ3D.setSurfHead(k);
+        heads3.highlight(k);
+        const sh = document.getElementById('surfHead');
+        if (sh) sh.value = k;
+      }
+    });
+    function ren2(s){ return s.ren.domElement; }
+    heads3 = {...s, floors,
+      setRotate(v){ s.ctrl.autoRotate = v; },
+      highlight(k){
+        floors.forEach(f => {
+          f.base.material.color.setHex(f.k === k ? 0x8f7bff : 0x0e2244);
+          f.base.material.opacity = f.k === k ? 0.8 : 0.55;
+        });
+      },
+      resize: s.resize};
+    heads3.highlight(App.headIdx);
+    autoLoop(container, () => {
+      s.ctrl.update();
+      s.ren.render(s.scene, s.cam);
+    });
+    window.addEventListener('resize', () => heads3 && heads3.resize());
+  }
+
   function refreshLang(){
     document.getElementById('archHint').textContent = I18N[App.lang].dragHint;
     document.getElementById('surfHint').textContent = I18N[App.lang].hoverHint;
@@ -246,8 +547,15 @@ const VIZ3D = (() => {
     }
   }
 
-  return {initArch, initSurf, refreshLang,
+  return {initArch, initSurf, initEmb3d, initPE3d, initHeads3d, refreshLang,
+    __scenes: () => ({arch, surf, emb, pe3, heads3}),
     setArchRotate: v => arch && arch.setRotate(v),
     setSurfRotate: v => surf && surf.setRotate(v),
-    setSurfHead: k => surf && surf.setHead(k)};
+    setSurfHead: k => surf && surf.setHead(k),
+    setEmbRotate: v => emb && emb.setRotate(v),
+    playEmbAnalogy: () => emb && emb.playAnalogy(),
+    setPE3dRotate: v => pe3 && pe3.setRotate(v),
+    setPEPos: p => pe3 && pe3.setPos(p),
+    setHeads3dRotate: v => heads3 && heads3.setRotate(v),
+    highlightHeads3d: k => heads3 && heads3.highlight(k)};
 })();
