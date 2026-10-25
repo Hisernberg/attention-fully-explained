@@ -6,7 +6,7 @@ colorTo: purple
 sdk: static
 pinned: true
 license: mit
-short_description: Attention mechanism — tokenization to output, Bangla + English
+short_description: Attention mechanism explained — Bangla + English
 ---
 
 # Attention, Fully Explained — টোকেন থেকে আউটপুট পর্যন্ত
